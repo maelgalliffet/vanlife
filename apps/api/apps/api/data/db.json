@@ -1,0 +1,78 @@
+{
+  "users": [
+    {
+      "id": "mael",
+      "name": "Maël/Salma"
+    },
+    {
+      "id": "ivan",
+      "name": "Ivan/Isa"
+    },
+    {
+      "id": "lena",
+      "name": "Lena/Lucas"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "beaa2e88-6570-4271-b56c-a2835baecb3a",
+      "weekendKey": "2025-09-06",
+      "startDate": "2025-09-06",
+      "endDate": "2025-09-07",
+      "dateKeys": [
+        "2025-09-06",
+        "2025-09-07"
+      ],
+      "userId": "mael",
+      "userName": "Maël/Salma",
+      "type": "definitive",
+      "note": "Lac de Monteynard",
+      "photoUrls": [
+        "http://localhost:4000/uploads/1771876023503-0415b726-69f3-445b-84e0-849327c3681f.jpg",
+        "http://localhost:4000/uploads/1771876023656-96adfcce-462d-4775-8b53-25b590a7bf42.jpg",
+        "http://localhost:4000/uploads/1771876023761-334bb701-b322-48a4-980d-619b9bf8112c.jpg"
+      ],
+      "createdAt": "2026-02-23T19:47:03.862Z",
+      "reactions": {},
+      "comments": [
+        {
+          "id": "41e41617-ef90-4d92-bd5d-3271a6b40119",
+          "userId": "mael",
+          "userName": "Maël/Salma",
+          "text": "Trop cool le Monteynard !!",
+          "createdAt": "2026-02-23T19:49:43.208Z"
+        }
+      ]
+    },
+    {
+      "id": "a522b045-93dc-45e5-bd5b-ba0cd0a88da4",
+      "weekendKey": "2026-05-01",
+      "startDate": "2026-05-01",
+      "endDate": "2026-05-16",
+      "dateKeys": [
+        "2026-05-01",
+        "2026-05-02",
+        "2026-05-03",
+        "2026-05-04",
+        "2026-05-05",
+        "2026-05-06",
+        "2026-05-07",
+        "2026-05-08",
+        "2026-05-09",
+        "2026-05-10",
+        "2026-05-11",
+        "2026-05-12",
+        "2026-05-13",
+        "2026-05-14",
+        "2026-05-15",
+        "2026-05-16"
+      ],
+      "userId": "lena",
+      "userName": "Lena/Lucas",
+      "type": "definitive",
+      "note": "",
+      "photoUrls": [],
+      "createdAt": "2026-02-23T19:49:19.248Z"
+    }
+  ]
+}

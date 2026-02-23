@@ -1,0 +1,13 @@
+Je veux une application web composée d'un calendrier permettant de réserver un week-end avec le van de mes parents.
+L'application doit etre disponible en ligne, facile d'utilisation, avec les features suivantes : 
+- Réserver provisoirement une date (plusieurs personnes peuvent réserver provisoirement la meme date)
+- Réserver définitvement une date (une seule personne peut)
+- Identifier la personne ayant réservée (une popup peut etre affichée a la première consulation du site pour dire qui on est parmis une liste déroulante)
+- Ajouter du texte sur une réservation, avec des informations sur l'objet de la réservation
+- Ajouter des photos liées à une réservation
+- Afficher un album des photos du van
+
+Contexte technique : 
+Front + Back en typescript
+Code Terraform permettant de provisionner les ressources nécéssaires
+CI/CD permettant de mettre à jour l'application en direct
