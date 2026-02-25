@@ -52,6 +52,29 @@ Déploie l'application sur le serveur AWS via SSH.
 ./scripts/deploy-aws.sh develop /home/ubuntu/vanlife
 ```
 
+### `npm run sync-data:aws`
+Synchronise les données locales vers le serveur AWS.
+
+**Usage** :
+```bash
+# Synchroniser db.json et les fichiers uploads
+npm run sync-data:aws
+
+# Ou avec serveur/chemin personnalisés
+./scripts/sync-data.sh aws-instance /home/ubuntu/vanlife
+```
+
+**Utilité** :
+- Copier les données de test locales vers le serveur
+- Sauvegarder les données locales avant déploiement
+- Initialiser le serveur avec des données de démarrage
+
+**Comment ça marche** :
+1. Crée une archive tar des répertoires locaux (`apps/api/data` et `apps/api/uploads`)
+2. Copie l'archive sur le serveur via SSH
+3. Utilise `docker cp` et `docker exec` pour extraire les données dans les conteneurs
+4. Nettoie les fichiers temporaires
+
 ## 🔄 Configuration CI/CD
 
 Le déploiement automatique est configuré dans `.github/workflows/deploy.yml`.
@@ -154,7 +177,42 @@ cd /home/ubuntu/vanlife && docker compose logs -f
 docker compose logs api | grep -i error
 ```
 
-## 📝 Notes
+## � Persistance des données
+
+Les données de l'application sont stockées dans des **volumes Docker nommés** :
+
+- `vanlife-data` : Base de données (apps/api/data/db.json)
+- `vanlife-uploads` : Fichiers uploadés (apps/api/uploads)
+
+**Important** :
+- Les volumes **persistent** même après `docker compose down`
+- Les données **restent** lors des redéploiements
+- Lors d'une première synchronisation, utilisez `npm run sync-data:aws`
+
+### Exemple de workflow avec synchronisation
+
+```bash
+# 1. Apporter des modifications locales
+# ... éditer du code, ajouter des données
+
+# 2. Synchroniser les données locales vers le serveur
+npm run sync-data:aws
+
+# 3. Déployer le code mis à jour
+npm run deploy:aws
+
+# 4. Les données restent intactes + code à jour !
+```
+
+### Sauvegarder les données du serveur en local
+
+```bash
+# Télécharger les données du serveur
+scp -r aws-instance:/home/ubuntu/vanlife/apps/api/data ./
+scp -r aws-instance:/home/ubuntu/vanlife/apps/api/uploads ./
+```
+
+## �📝 Notes
 
 - Le déploiement crée ou réutilise le répertoire `EC2_APP_PATH`
 - Les images Docker sont reconstruites à chaque déploiement (`--no-cache`)
