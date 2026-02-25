@@ -11,6 +11,7 @@
     "start": "npm run start -w apps/api",
     "lint": "npm run lint -w apps/api && npm run lint -w apps/web",
     "deploy": "bash ./scripts/deploy.sh",
-    "deploy:aws": "bash ./scripts/deploy-aws.sh"
+    "deploy:aws": "bash ./scripts/deploy-aws.sh",
+    "sync-data:aws": "bash ./scripts/sync-data.sh aws-instance /home/ubuntu/vanlife"
   }
 }
