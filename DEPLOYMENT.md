@@ -97,7 +97,7 @@ Le déploiement utilise le profil SSH `aws-instance` configuré dans `~/.ssh/con
 
 ```
 Host aws-instance
-    HostName ec2-13-39-80-93.eu-west-3.compute.amazonaws.com
+    HostName vanlife.galliffet.fr
     User ubuntu
     IdentityFile ~/.ssh/maelg-keypair.pem
     IdentitiesOnly yes

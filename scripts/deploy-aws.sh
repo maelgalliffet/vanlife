@@ -7,7 +7,7 @@ set -euo pipefail
 
 BRANCH="${1:-main}"
 APP_PATH="${2:-/home/ubuntu/vanlife}"
-EC2_HOST="ec2-13-39-80-93.eu-west-3.compute.amazonaws.com"
+EC2_HOST="vanlife.galliffet.fr"
 REPO_URL="https://github.com/maelgalliffet/vanlife.git"
 
 # Couleurs
@@ -66,8 +66,14 @@ echo "Configuration de l'environnement..."
 cat > .env <<EOF
 PORT=4000
 CORS_ORIGIN=*
-BASE_URL=http://$EC2_HOST:4000
+BASE_URL=https://$EC2_HOST
 EOF
+
+echo "Vérification des certificats HTTPS..."
+if [ ! -f "/etc/letsencrypt/live/vanlife.galliffet.fr/fullchain.pem" ]; then
+  echo "⚠️  Certificats Let's Encrypt non trouvés"
+  echo "Vous pouvez les générer avec: ./scripts/setup-https.sh"
+fi
 
 echo "Arrêt des conteneurs existants (données persistées)..."
 docker compose down || true
@@ -79,12 +85,20 @@ echo "Démarrage des conteneurs..."
 docker compose up -d
 
 echo ""
-echo "Déploiement terminé !"
-echo "API: http://$EC2_HOST:4000"
-echo "Web: http://$EC2_HOST:80"
+echo "✨ Déploiement terminé !"
+echo "API: https://$EC2_HOST (proxy vers le port 4000)"
+echo "Web: https://$EC2_HOST"
+echo ""
+echo "Pour vérifier les certificats HTTPS :"
+echo "  curl -I https://$EC2_HOST"
 echo ""
 echo "Logs:"
 docker compose logs --tail=20 api
+
+echo ""
+echo "⚠️  SÉCURITÉ:"
+echo "Le port 4000 (API) est accessible publiquement."
+echo "Limitez l'accès via le groupe de sécurité AWS si nécessaire."
 
 DEPLOY_SCRIPT
 

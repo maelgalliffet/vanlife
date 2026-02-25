@@ -8,7 +8,7 @@ services:
     environment:
       - PORT=${PORT:-4000}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
-      - BASE_URL=${BASE_URL:-http://localhost:4000}
+      - BASE_URL=${BASE_URL:-https://localhost}
     ports:
       - "4000:4000"
     volumes:
@@ -21,6 +21,10 @@ services:
       dockerfile: apps/web/Dockerfile
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      # Certificats SSL Let's Encrypt (générés avec setup-https.sh)
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - api
 

@@ -4,15 +4,15 @@ import "react-calendar/dist/Calendar.css";
 import { Booking, BookingType, PhotoItem, User } from "./types";
 
 // Construire l'API URL de manière dynamique à l'exécution
-// En production, utiliser le serveur courant + port 4000
+// En production, utiliser /api (proxy Nginx)
 // En développement, utiliser localhost:4000
 const getApiUrl = () => {
   // Si on est en dev (Vite dev server)
   if (import.meta.env.DEV) {
     return "http://localhost:4000";
   }
-  // En production, utiliser le hostname courant avec le port 4000
-  return `${window.location.protocol}//${window.location.hostname}:4000`;
+  // En production, utiliser le proxy Nginx sur /api
+  return "/api";
 };
 
 const API_URL = getApiUrl();

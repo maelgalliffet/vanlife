@@ -85,7 +85,7 @@ setup_environment() {
   cat > .env <<EOF
 PORT=$PORT
 CORS_ORIGIN=$CORS_ORIGIN
-BASE_URL=http://$EC2_HOST:$PORT
+BASE_URL=https://$EC2_HOST
 EOF
   
   success "Environnement configuré"
@@ -133,6 +133,13 @@ health_check() {
   else
     log "API may still be starting up, check with: docker compose logs api"
   fi
+  
+  # Vérifier les certificats HTTPS s'ils existent
+  if [ -f "/etc/letsencrypt/live/vanlife.galliffet.fr/fullchain.pem" ]; then
+    success "Certificats HTTPS trouvés ✓"
+  else
+    log "ℹ️  Certificats HTTPS non configurés. Pour configurer: ./scripts/setup-https.sh"
+  fi
 }
 
 # Fonction principale
@@ -155,8 +162,9 @@ main() {
   echo -e "${GREEN}Déploiement terminé avec succès !${NC}"
   echo -e "${BLUE}===================================${NC}"
   echo ""
-  echo "API: http://$EC2_HOST:$PORT"
-  echo "Web: http://$EC2_HOST:80"
+  echo "📱 Application Web: https://$EC2_HOST"
+  echo "🔌 API (interne): http://localhost:$PORT"
+  echo "🔒 Protocol: HTTPS (port 443)"
   echo ""
   echo "Pour voir les logs:"
   echo "  cd $APP_PATH && docker compose logs -f"
