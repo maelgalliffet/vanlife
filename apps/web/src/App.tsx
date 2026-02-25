@@ -118,6 +118,7 @@ export default function App() {
   const [isDeletingBooking, setIsDeletingBooking] = useState(false);
   const [editError, setEditError] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [showBookingPopup, setShowBookingPopup] = useState(false);
 
   useEffect(() => {
     void loadUsers();
@@ -218,6 +219,9 @@ export default function App() {
 
     setNote("");
     setFiles(null);
+    setRangeStart(null);
+    setRangeEnd(null);
+    setShowBookingPopup(false);
     await refreshData();
     setIsSubmitting(false);
   }
@@ -328,11 +332,21 @@ export default function App() {
   }, [activeBooking]);
 
   function openBookingEditor(booking: Booking) {
-    if (!currentUserId || booking.userId !== currentUserId) {
+    setActiveBooking(booking);
+  }
+
+  function openBookingCreationPopup() {
+    if (!currentUserId) {
+      setError("Sélectionne ton identité d'abord");
       return;
     }
 
-    setActiveBooking(booking);
+    if (!rangeStart || !rangeEnd) {
+      setError("Sélectionne une plage complète (début puis fin)");
+      return;
+    }
+
+    setShowBookingPopup(true);
   }
 
   async function saveBookingEdits() {
@@ -626,9 +640,16 @@ export default function App() {
             {rangeStart && rangeEnd && `Dates sélectionnées: ${formatStay(toDateKey(rangeStart), toDateKey(rangeEnd))}`}
           </p>
           {rangeStart && (
-            <button type="button" className="secondary-button" onClick={clearSelection}>
-              Annuler la sélection
-            </button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              {hasCompleteRange && (
+                <button type="button" onClick={openBookingCreationPopup}>
+                  Réserver un séjour
+                </button>
+              )}
+              <button type="button" className="secondary-button" onClick={clearSelection}>
+                Annuler la sélection
+              </button>
+            </div>
           )}
         </section>
 
@@ -640,36 +661,6 @@ export default function App() {
                 {isResetting ? "Réinitialisation..." : "Réinitialiser"}
               </button>
               {devMessage && <p className="dev-message">{devMessage}</p>}
-            </section>
-          )}
-
-          {hasCompleteRange && (
-            <section className="card">
-              <h2>Réserver un séjour</h2>
-              <form onSubmit={submitBooking} className="form">
-                <label>
-                  Type de réservation
-                  <select value={reservationType} onChange={(event) => setReservationType(event.target.value as BookingType)}>
-                    <option value="provisional">Provisoire</option>
-                    <option value="definitive">Définitive</option>
-                  </select>
-                </label>
-
-                <label>
-                  Infos / objet
-                  <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} />
-                </label>
-
-                <label>
-                  Photos
-                  <input type="file" accept="image/*" multiple onChange={(event) => setFiles(event.target.files)} />
-                </label>
-
-                <button disabled={isSubmitting} type="submit">
-                  {isSubmitting ? "Envoi..." : "Confirmer"}
-                </button>
-              </form>
-              {error && <p className="error">{error}</p>}
             </section>
           )}
 
@@ -798,20 +789,40 @@ export default function App() {
           <div className="modal" onClick={(event) => event.stopPropagation()}>
             <h2>Modifier la réservation</h2>
 
+            {currentUserId !== activeBooking.userId && (
+              <p className="error" style={{ marginBottom: '16px' }}>
+                ⚠️ Cette réservation appartient à {activeBooking.userName}. Seul le créateur peut la modifier.
+              </p>
+            )}
+
             <div className="form">
               <label>
                 Début
-                <input type="date" value={editStartDate} onChange={(event) => setEditStartDate(event.target.value)} />
+                <input 
+                  type="date" 
+                  value={editStartDate} 
+                  onChange={(event) => setEditStartDate(event.target.value)} 
+                  disabled={currentUserId !== activeBooking.userId}
+                />
               </label>
 
               <label>
                 Fin
-                <input type="date" value={editEndDate} onChange={(event) => setEditEndDate(event.target.value)} />
+                <input 
+                  type="date" 
+                  value={editEndDate} 
+                  onChange={(event) => setEditEndDate(event.target.value)}
+                  disabled={currentUserId !== activeBooking.userId}
+                />
               </label>
 
               <label>
                 Type
-                <select value={editType} onChange={(event) => setEditType(event.target.value as BookingType)}>
+                <select 
+                  value={editType} 
+                  onChange={(event) => setEditType(event.target.value as BookingType)}
+                  disabled={currentUserId !== activeBooking.userId}
+                >
                   <option value="provisional">Provisoire</option>
                   <option value="definitive">Définitive</option>
                 </select>
@@ -819,7 +830,12 @@ export default function App() {
 
               <label>
                 Texte
-                <textarea value={editNote} onChange={(event) => setEditNote(event.target.value)} rows={3} />
+                <textarea 
+                  value={editNote} 
+                  onChange={(event) => setEditNote(event.target.value)} 
+                  rows={3}
+                  disabled={currentUserId !== activeBooking.userId}
+                />
               </label>
 
               <div>
@@ -829,43 +845,91 @@ export default function App() {
                   {editPhotoUrls.map((url) => (
                     <div key={url} className="photo-edit-item">
                       <img src={url} alt="Photo réservation" />
-                      <button
-                        type="button"
-                        className="danger-button"
-                        onClick={() => setEditPhotoUrls((current) => current.filter((item) => item !== url))}
-                      >
-                        Retirer
-                      </button>
+                      {currentUserId === activeBooking.userId && (
+                        <button
+                          type="button"
+                          className="danger-button"
+                          onClick={() => setEditPhotoUrls((current) => current.filter((item) => item !== url))}
+                        >
+                          Retirer
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              <label>
-                Ajouter des images
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(event) => setEditNewFiles(event.target.files)}
-                />
-              </label>
+              {currentUserId === activeBooking.userId && (
+                <label>
+                  Ajouter des images
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) => setEditNewFiles(event.target.files)}
+                  />
+                </label>
+              )}
 
               {editError && <p className="error">{editError}</p>}
 
-              <div className="edit-actions">
-                <button type="button" onClick={saveBookingEdits} disabled={isSavingEdit}>
-                  {isSavingEdit ? "Enregistrement..." : "Enregistrer"}
-                </button>
-                <button type="button" onClick={() => setActiveBooking(null)}>
-                  Annuler
-                </button>
-              </div>
+              {currentUserId === activeBooking.userId && (
+                <div className="edit-actions">
+                  <button type="button" onClick={saveBookingEdits} disabled={isSavingEdit}>
+                    {isSavingEdit ? "Enregistrement..." : "Enregistrer"}
+                  </button>
+                  <button type="button" onClick={() => setActiveBooking(null)}>
+                    Annuler
+                  </button>
+                </div>
+              )}
             </div>
 
             <button type="button" onClick={() => setActiveBooking(null)}>
               Fermer
             </button>
+          </div>
+        </div>
+      )}
+
+      {showBookingPopup && (
+        <div className="modal-overlay" onClick={() => setShowBookingPopup(false)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <h2>Réserver un séjour</h2>
+            <p style={{ marginBottom: '16px' }}>
+              Du <strong>{rangeStart ? toDateKey(rangeStart) : ''}</strong> au <strong>{rangeEnd ? toDateKey(rangeEnd) : ''}</strong>
+            </p>
+
+            <form onSubmit={submitBooking} className="form">
+              <label>
+                Type de réservation
+                <select value={reservationType} onChange={(event) => setReservationType(event.target.value as BookingType)}>
+                  <option value="provisional">Provisoire</option>
+                  <option value="definitive">Définitive</option>
+                </select>
+              </label>
+
+              <label>
+                Infos / objet
+                <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} />
+              </label>
+
+              <label>
+                Photos
+                <input type="file" accept="image/*" multiple onChange={(event) => setFiles(event.target.files)} />
+              </label>
+
+              {error && <p className="error">{error}</p>}
+
+              <div className="edit-actions">
+                <button disabled={isSubmitting} type="submit">
+                  {isSubmitting ? "Envoi..." : "Confirmer"}
+                </button>
+                <button type="button" onClick={() => setShowBookingPopup(false)}>
+                  Annuler
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
