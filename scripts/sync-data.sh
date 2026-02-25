@@ -7,8 +7,9 @@ set -euo pipefail
 
 SSH_HOST="${1:-aws-instance}"
 APP_PATH="${2:-/home/ubuntu/vanlife}"
-LOCAL_DATA_PATH="apps/api/data"
-LOCAL_UPLOADS_PATH="apps/api/uploads"
+# Les vraies données sont dans apps/api/apps/api/ (structure du workspace monorepo)
+LOCAL_DATA_PATH="apps/api/apps/api/data"
+LOCAL_UPLOADS_PATH="apps/api/apps/api/uploads"
 
 # Couleurs
 BLUE='\033[0;34m'
@@ -45,14 +46,14 @@ fi
 # Fonction pour synchroniser via tar (plus compatible avec Docker)
 sync_via_tar() {
   local source_dir="$1"
-  local dest_path="$2"
+  local container_dest_path="$2"  # Le chemin DANS le conteneur (relatif à /app/)
   
   if [ -z "$(ls -A "$source_dir" 2>/dev/null)" ]; then
     log "Le répertoire $source_dir est vide, copie ignorée"
     return
   fi
   
-  log "Synchronisation de $source_dir vers le serveur..."
+  log "Synchronisation de $source_dir vers le serveur (cible: /app/$container_dest_path)..."
   
   # Créer une archive tar des fichiers locaux
   tar -czf /tmp/sync-data.tar.gz -C "$source_dir" . || {
@@ -78,7 +79,7 @@ sync_via_tar() {
     docker cp /tmp/sync-data.tar.gz vanlife-api-1:/tmp/sync-data.tar.gz
     
     # Extraire l'archive dans le conteneur (qui a les bonnes permissions)
-    docker exec vanlife-api-1 tar -xzf /tmp/sync-data.tar.gz -C /app/$dest_path
+    docker exec vanlife-api-1 tar -xzf /tmp/sync-data.tar.gz -C /app/$container_dest_path
     
     # Nettoyer l'archive temporaire
     rm -f /tmp/sync-data.tar.gz
@@ -94,17 +95,19 @@ EOF
 }
 
 # Synchroniser les données
-sync_via_tar "$LOCAL_DATA_PATH" "$LOCAL_DATA_PATH" "vanlife-data"
-sync_via_tar "$LOCAL_UPLOADS_PATH" "$LOCAL_UPLOADS_PATH" "vanlife-uploads"
+# LOCAL_DATA_PATH et LOCAL_UPLOADS_PATH sont en apps/api/apps/api/*
+# Mais dans le conteneur ils sont montés à /app/apps/api/*
+sync_via_tar "$LOCAL_DATA_PATH" "apps/api/data"
+sync_via_tar "$LOCAL_UPLOADS_PATH" "apps/api/uploads"
 
 # Afficher les statistiques
 log "Affichage des données copiées..."
 echo ""
 echo "=== Données sur le serveur ==="
-ssh "$SSH_HOST" "cd $APP_PATH && find $LOCAL_DATA_PATH $LOCAL_UPLOADS_PATH -type f 2>/dev/null | head -20 || true"
+ssh "$SSH_HOST" "cd $APP_PATH && docker compose exec -T api find apps/api/data apps/api/uploads -type f 2>/dev/null | head -20 || true"
 
 success "Synchronisation des données terminée !"
 echo ""
 echo "Pour voir toutes les données:"
-echo "  ssh $SSH_HOST 'du -sh $APP_PATH/$LOCAL_DATA_PATH $APP_PATH/$LOCAL_UPLOADS_PATH'"
+echo "  ssh $SSH_HOST 'cd $APP_PATH && docker compose exec -T api du -sh apps/api/data apps/api/uploads'"
 echo ""
