@@ -3,9 +3,19 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { Booking, BookingType, PhotoItem, User } from "./types";
 
-const API_URL =
-  import.meta.env.VITE_API_URL ??
-  `${window.location.protocol}//${window.location.hostname}:4000`;
+// Construire l'API URL de manière dynamique à l'exécution
+// En production, utiliser le serveur courant + port 4000
+// En développement, utiliser localhost:4000
+const getApiUrl = () => {
+  // Si on est en dev (Vite dev server)
+  if (import.meta.env.DEV) {
+    return "http://localhost:4000";
+  }
+  // En production, utiliser le hostname courant avec le port 4000
+  return `${window.location.protocol}//${window.location.hostname}:4000`;
+};
+
+const API_URL = getApiUrl();
 const STORAGE_KEY = "vanlife-current-user-id";
 const IS_DEV = import.meta.env.DEV;
 
