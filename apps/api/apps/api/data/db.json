@@ -28,9 +28,9 @@
       "type": "definitive",
       "note": "Lac de Monteynard",
       "photoUrls": [
-        "http://localhost:4000/uploads/1771876023503-0415b726-69f3-445b-84e0-849327c3681f.jpg",
-        "http://localhost:4000/uploads/1771876023656-96adfcce-462d-4775-8b53-25b590a7bf42.jpg",
-        "http://localhost:4000/uploads/1771876023761-334bb701-b322-48a4-980d-619b9bf8112c.jpg"
+        "http://ec2-13-39-80-93.eu-west-3.compute.amazonaws.com:4000/uploads/1771876023503-0415b726-69f3-445b-84e0-849327c3681f.jpg",
+        "http://ec2-13-39-80-93.eu-west-3.compute.amazonaws.com:4000/uploads/1771876023656-96adfcce-462d-4775-8b53-25b590a7bf42.jpg",
+        "http://ec2-13-39-80-93.eu-west-3.compute.amazonaws.com:4000/uploads/1771876023761-334bb701-b322-48a4-980d-619b9bf8112c.jpg"
       ],
       "createdAt": "2026-02-23T19:47:03.862Z",
       "reactions": {},
