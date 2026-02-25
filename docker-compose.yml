@@ -12,8 +12,8 @@ services:
     ports:
       - "4000:4000"
     volumes:
-      - ./apps/api/data:/app/apps/api/data
-      - ./apps/api/uploads:/app/apps/api/uploads
+      - vanlife-data:/app/apps/api/data
+      - vanlife-uploads:/app/apps/api/uploads
 
   web:
     build:
@@ -23,3 +23,17 @@ services:
       - "80:80"
     depends_on:
       - api
+
+volumes:
+  vanlife-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./apps/api/data
+  vanlife-uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./apps/api/uploads

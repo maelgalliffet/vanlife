@@ -19,20 +19,24 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          protocol: tcp
           script: |
             set -e
-            if [ ! -d "${{ secrets.EC2_APP_PATH }}" ]; then
-              mkdir -p "${{ secrets.EC2_APP_PATH }}"
-              git clone https://github.com/${{ github.repository }} "${{ secrets.EC2_APP_PATH }}"
-            fi
+            export REPO_URL="https://github.com/${{ github.repository }}"
+            export APP_PATH="${{ secrets.EC2_APP_PATH }}"
+            export BRANCH="main"
+            export PORT="4000"
+            export CORS_ORIGIN="*"
+            export EC2_HOST="${{ secrets.EC2_HOST }}"
+            
+            cd "${{ secrets.EC2_APP_PATH }}" || mkdir -p "${{ secrets.EC2_APP_PATH }}"
             cd "${{ secrets.EC2_APP_PATH }}"
+            
+            if [ ! -d ".git" ]; then
+              git clone "$REPO_URL" .
+            fi
+            
             git fetch --all
-            git reset --hard origin/main
-            cat > .env <<EOF
-            PORT=4000
-            CORS_ORIGIN=*
-            BASE_URL=http://${{ secrets.EC2_HOST }}:4000
-            EOF
-            docker compose down
-            docker compose build --no-cache
-            docker compose up -d
+            git reset --hard "origin/main"
+            
+            bash ./scripts/deploy.sh
