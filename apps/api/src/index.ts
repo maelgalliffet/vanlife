@@ -98,7 +98,7 @@ app.post("/bookings/:type", upload.array("photos", 10), (req: Request<{ type: Bo
   }
 
   const files = (req.files as Express.Multer.File[] | undefined) ?? [];
-  const photoUrls = files.map((file) => `${baseUrl}/uploads/${file.filename}`);
+  const photoUrls = files.map((file) => `/uploads/${file.filename}`);
 
   const booking = {
     id: uuidv4(),
@@ -165,7 +165,7 @@ app.put("/bookings/:id", upload.array("photos", 10), (req: Request<{ id: string 
   const removePhotoUrls = parseRemovePhotoUrls(payload.removePhotoUrls);
   const keptPhotoUrls = currentBooking.photoUrls.filter((url) => !removePhotoUrls.includes(url));
   const uploadedFiles = (req.files as Express.Multer.File[] | undefined) ?? [];
-  const addedPhotoUrls = uploadedFiles.map((file) => `${baseUrl}/uploads/${file.filename}`);
+  const addedPhotoUrls = uploadedFiles.map((file) => `/uploads/${file.filename}`);
   const nextPhotoUrls = [...keptPhotoUrls, ...addedPhotoUrls];
 
   deletePhotoFiles(removePhotoUrls);
