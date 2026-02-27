@@ -20,12 +20,12 @@ export interface Booking {
   dateKeys: string[];
   userId: string;
   userName: string;
-  type: "tentative" | "definitive";
+  type: "tentative" | "definitive" | "provisional";
   note: string;
   photoUrls: string[];
   createdAt: string;
-  reactions?: Record<string, string>;
-  comments?: Array<{
+  reactions: Record<string, string>;
+  comments: Array<{
     id: string;
     userId: string;
     userName: string;

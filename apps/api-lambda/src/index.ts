@@ -28,9 +28,10 @@ function getDateKeysBetween(startDateStr: string, endDateStr: string): string[] 
 }
 
 function normalizeBooking(booking: any): Booking {
+  const normalizedType = booking.type === "tentative" ? "provisional" : booking.type;
   return {
     ...booking,
-    type: booking.type === "tentative" ? "provisional" : booking.type,
+    type: normalizedType,
     reactions: booking.reactions ?? {},
     comments: booking.comments ?? []
   };
