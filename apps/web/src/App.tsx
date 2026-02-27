@@ -573,7 +573,7 @@ export default function App() {
       )}
 
       <header>
-        <h1>Réservation week-end van</h1>
+        <h1>Vanlife Galliffet Family !</h1>
         <div className="current-user-row">
           <span>Connecté en tant que:</span>
           <select
@@ -879,19 +879,19 @@ export default function App() {
             <div className="form">
               <label>
                 Début
-                <input 
-                  type="date" 
-                  value={editStartDate} 
-                  onChange={(event) => setEditStartDate(event.target.value)} 
+                <input
+                  type="date"
+                  value={editStartDate}
+                  onChange={(event) => setEditStartDate(event.target.value)}
                   disabled={currentUserId !== activeBooking.userId}
                 />
               </label>
 
               <label>
                 Fin
-                <input 
-                  type="date" 
-                  value={editEndDate} 
+                <input
+                  type="date"
+                  value={editEndDate}
                   onChange={(event) => setEditEndDate(event.target.value)}
                   disabled={currentUserId !== activeBooking.userId}
                 />
@@ -899,8 +899,8 @@ export default function App() {
 
               <label>
                 Type
-                <select 
-                  value={editType} 
+                <select
+                  value={editType}
                   onChange={(event) => setEditType(event.target.value as BookingType)}
                   disabled={currentUserId !== activeBooking.userId}
                 >
@@ -911,9 +911,9 @@ export default function App() {
 
               <label>
                 Texte
-                <textarea 
-                  value={editNote} 
-                  onChange={(event) => setEditNote(event.target.value)} 
+                <textarea
+                  value={editNote}
+                  onChange={(event) => setEditNote(event.target.value)}
                   rows={3}
                   disabled={currentUserId !== activeBooking.userId}
                 />
