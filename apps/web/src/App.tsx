@@ -119,6 +119,8 @@ export default function App() {
   const [isDeletingBooking, setIsDeletingBooking] = useState(false);
   const [editError, setEditError] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
   const [showBookingPopup, setShowBookingPopup] = useState(false);
 
   useEffect(() => {
@@ -486,6 +488,57 @@ export default function App() {
     await refreshData();
   }
 
+  async function deleteComment(bookingId: string, commentId: string) {
+    if (!currentUserId) {
+      return;
+    }
+
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")) {
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/bookings/${bookingId}/comments/${commentId}?requesterUserId=${encodeURIComponent(currentUserId)}`, {
+      method: "DELETE"
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    await refreshData();
+  }
+
+  async function updateComment(bookingId: string, commentId: string) {
+    if (!currentUserId) {
+      return;
+    }
+
+    const text = editingCommentText.trim();
+    if (!text) {
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/bookings/${bookingId}/comments/${commentId}?requesterUserId=${encodeURIComponent(currentUserId)}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ text })
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    setEditingCommentId(null);
+    setEditingCommentText("");
+    await refreshData();
+  }
+
+  function startEditingComment(text: string) {
+    setEditingCommentText(text);
+  }
+
   const bookingsByDate = useMemo(() => {
     const map = new Map<string, Booking[]>();
     for (const booking of bookings) {
@@ -724,10 +777,37 @@ export default function App() {
                 <strong>Commentaires</strong>
                 {comments.length === 0 && <p>Aucun commentaire.</p>}
                 {comments.map((comment) => (
-                  <p key={comment.id} className="comment-item">
-                    <strong>{comment.userName}</strong> · {new Date(comment.createdAt).toLocaleDateString("fr-FR")}<br />
-                    {comment.text}
-                  </p>
+                  <div key={comment.id} className="comment-item">
+                    {editingCommentId === comment.id ? (
+                      <div className="comment-edit-form">
+                        <textarea
+                          rows={2}
+                          value={editingCommentText}
+                          onChange={(event) => setEditingCommentText(event.target.value)}
+                        />
+                        <button type="button" onClick={() => void updateComment(booking.id, comment.id)}>
+                          Enregistrer
+                        </button>
+                        <button type="button" onClick={() => { setEditingCommentId(null); setEditingCommentText(""); }}>
+                          Annuler
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p>
+                          <strong>{comment.userName}</strong> · {new Date(comment.createdAt).toLocaleDateString("fr-FR")}
+                          {comment.updatedAt && <span> (modifié)</span>}
+                          {currentUserId === comment.userId && (
+                            <span className="comment-actions">
+                              <button type="button" onClick={() => { setEditingCommentId(comment.id); startEditingComment(comment.text); }} title="Modifier">✏️</button>
+                              <button type="button" onClick={() => void deleteComment(booking.id, comment.id)} title="Supprimer">🗑️</button>
+                            </span>
+                          )}
+                        </p>
+                        <p>{comment.text}</p>
+                      </>
+                    )}
+                  </div>
                 ))}
 
                 <div className="comment-form">

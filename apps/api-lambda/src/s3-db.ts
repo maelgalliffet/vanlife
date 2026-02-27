@@ -31,6 +31,7 @@ export interface Booking {
     userName: string;
     text: string;
     createdAt: string;
+    updatedAt?: string;
   }>;
 }
 

@@ -383,6 +383,52 @@ app.post("/bookings/:id/comments", async (req: Request<{ id: string }>, res) => 
   }
 });
 
+// Modify comment
+app.patch("/bookings/:bookingId/comments/:commentId", async (req: Request<{ bookingId: string; commentId: string }>, res) => {
+  try {
+    const { bookingId, commentId } = req.params;
+    const { userId, text } = req.body as { userId?: string; text?: string };
+    const requesterUserId =
+      typeof req.query.requesterUserId === "string"
+        ? req.query.requesterUserId
+        : ((req.body as { requesterUserId?: string } | undefined)?.requesterUserId ?? userId ?? "");
+
+    if (!requesterUserId || !text) {
+      return res.status(400).json({ message: "requesterUserId and text are required" });
+    }
+
+    const db = await readDb();
+    const booking = db.bookings.find((booking) => booking.id === bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Réservation introuvable" });
+    }
+
+    const normalized = normalizeBooking(booking);
+    const comment = normalized.comments.find((comment) => comment.id === commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (comment.userId !== requesterUserId) {
+      return res.status(403).json({ message: "Vous ne pouvez modifier que vos propres commentaires" });
+    }
+
+    comment.text = text;
+    comment.updatedAt = new Date().toISOString();
+
+    Object.assign(booking, normalized);
+    await writeDb(db);
+
+    return res.status(200).json(comment);
+  } catch (error) {
+    console.error("Error updating comment:", error);
+    return res.status(500).json({ message: "Error updating comment" });
+  }
+});
+
+// Delete comment
 app.delete("/bookings/:bookingId/comments/:commentId", async (req: Request<{ bookingId: string; commentId: string }>, res) => {
   try {
     const { bookingId, commentId } = req.params;

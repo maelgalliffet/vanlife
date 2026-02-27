@@ -354,6 +354,60 @@ button:disabled {
   padding: 0.45rem 0.55rem;
 }
 
+.comment-actions {
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+.comment-actions button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0.3rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.comment-actions button:hover {
+  opacity: 0.7;
+}
+
+.comment-edit-form {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.comment-edit-form textarea {
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.comment-edit-form button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.comment-edit-form button:first-of-type {
+  background: #0f172a;
+  color: white;
+  border-color: #0f172a;
+}
+
+.comment-edit-form button:hover {
+  opacity: 0.8;
+}
+
 .comment-form {
   display: grid;
   gap: 0.45rem;
