@@ -54,7 +54,11 @@ jobs:
         with:
           terraform_version: "1.6.0"
 
+      - name: Initialize Terraform backend
+        run: bash ./scripts/init-backend.sh
+
       - name: Deploy to Lambda
         run: npm run deploy:lambda
         env:
           AWS_REGION: eu-west-3
+          TF_INPUT: false

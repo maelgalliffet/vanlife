@@ -1,0 +1,22 @@
+# Terraform local state (using remote S3 backend)
+terraform.tfstate
+terraform.tfstate.*
+.terraform.lock.hcl
+
+# Terraform directories
+.terraform/
+.terraform.tfstate*
+
+# Terraform override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Terraform apply output files
+apply.log
+plan.json

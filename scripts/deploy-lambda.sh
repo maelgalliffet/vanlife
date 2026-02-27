@@ -43,8 +43,18 @@ echo ""
 
 # 2. Deploy infrastructure with Terraform
 log "2. Déploiement de l'infrastructure Terraform..."
+
+# 2a. Initialize remote state backend
+log "2a. Initialisation du backend S3..."
+bash ./scripts/init-backend.sh
+success "Backend S3 configuré"
+echo ""
+
+# 2b. Terraform init and apply
+log "2b. Initialisation de Terraform avec backend S3..."
 cd "$TERRAFORM_DIR"
-terraform init -upgrade
+terraform init -reconfigure
+log "Création/mise à jour de l'infrastructure..."
 terraform apply -auto-approve
 cd ../..
 success "Infrastructure déployée"
