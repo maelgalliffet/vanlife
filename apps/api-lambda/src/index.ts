@@ -81,6 +81,33 @@ app.get("/bookings", async (req, res) => {
   }
 });
 
+app.get("/photos", async (_req, res) => {
+  try {
+    const db = await readDb();
+    const photos: any[] = [];
+
+    db.bookings.forEach((booking) => {
+      const normalized = normalizeBooking(booking);
+      normalized.photoUrls.forEach((url) => {
+        photos.push({
+          url,
+          startDate: normalized.startDate,
+          endDate: normalized.endDate,
+          userName: normalized.userName,
+          type: normalized.type,
+          note: normalized.note,
+          bookingId: normalized.id
+        });
+      });
+    });
+
+    res.json(photos);
+  } catch (error) {
+    console.error("Error reading photos:", error);
+    res.status(500).json({ message: "Error reading photos" });
+  }
+});
+
 app.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ type: BookingType }>, res) => {
   try {
     const type = req.params.type;
