@@ -12,6 +12,8 @@
     "lint": "npm run lint -w apps/api && npm run lint -w apps/web",
     "deploy": "bash ./scripts/deploy.sh",
     "deploy:aws": "bash ./scripts/deploy-aws.sh",
+    "deploy:lambda": "bash ./scripts/deploy-lambda.sh",
+    "migrate:lambda": "bash ./scripts/migrate-to-lambda.sh",
     "sync-data:aws": "bash ./scripts/sync-data.sh aws-instance /home/ubuntu/vanlife"
   }
 }
