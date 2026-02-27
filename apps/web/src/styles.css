@@ -11,11 +11,12 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background-color: #f5e6d3;
   background-image:
-    linear-gradient(rgba(15, 23, 42, 0.58), rgba(15, 23, 42, 0.66)),
-    url("https://images.unsplash.com/photo-1470246973918-29a93221c455?auto=format&fit=crop&w=1920&q=80");
-  background-size: cover;
-  background-position: center;
+    linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.75)),
+    url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cstyle%3E.van%7Bfill:%23d4a574%7D.window%7Bfill:%236ba3d3%7D.wheel%7Bfill:%23333%7D.detail%7Bstroke:%23333%3Bstroke-width:0.5%7D%3C/style%3E%3C/defs%3E%3Cg opacity='0.15'%3E%3C!-- Van body --%3E%3Crect x='15' y='50' width='70' height='35' rx='2' class='van'/%3E%3C!-- Van cabin --%3E%3Crect x='15' y='40' width='25' height='15' rx='1' class='van'/%3E%3C!-- Main window --%3E%3Crect x='20' y='52' width='18' height='18' rx='1' class='window'/%3E%3C!-- Side windows --%3E%3Crect x='45' y='52' width='12' height='12' rx='1' class='window'/%3E%3Crect x='62' y='52' width='12' height='12' rx='1' class='window'/%3E%3C!-- Windshield --%3E%3Crect x='17' y='42' width='14' height='8' rx='1' class='window'/%3E%3C!-- Front wheel --%3E%3Ccircle cx='25' cy='88' r='5' class='wheel'/%3E%3C!-- Rear wheel --%3E%3Ccircle cx='72' cy='88' r='5' class='wheel'/%3E%3C!-- Bumper --%3E%3Crect x='13' y='86' width='4' height='6' fill='%23555'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  background-position: 0 0;
   background-attachment: fixed;
 }
 
