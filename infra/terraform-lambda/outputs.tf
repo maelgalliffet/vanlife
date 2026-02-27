@@ -3,6 +3,11 @@ output "api_url" {
   value       = "${aws_api_gateway_stage.api.invoke_url}"
 }
 
+output "api_custom_domain" {
+  description = "Custom domain for API"
+  value       = "https://api.${var.domain_name}"
+}
+
 output "frontend_bucket" {
   description = "S3 bucket name for frontend"
   value       = aws_s3_bucket.frontend.id
