@@ -14,8 +14,13 @@ output "frontend_bucket" {
 }
 
 output "frontend_url" {
-  description = "Frontend website URL"
-  value       = "http://${aws_s3_bucket.frontend.bucket}.s3-website.${var.aws_region}.amazonaws.com"
+  description = "Frontend CloudFront custom domain URL"
+  value       = "https://${var.domain_name}"
+}
+
+output "frontend_cloudfront_domain" {
+  description = "CloudFront distribution domain"
+  value       = aws_cloudfront_distribution.frontend.domain_name
 }
 
 output "uploads_bucket" {

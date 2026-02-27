@@ -1,0 +1,376 @@
+[0m[1mdata.aws_route53_zone.galliffet: Reading...[0m[0m
+[0m[1maws_api_gateway_rest_api.api: Refreshing state... [id=l9tfi28yik][0m
+[0m[1maws_iam_role.lambda_role: Refreshing state... [id=vanlife-lambda-role-prod][0m
+[0m[1maws_s3_bucket.data: Refreshing state... [id=vanlife-data-prod][0m
+[0m[1maws_s3_bucket.uploads: Refreshing state... [id=vanlife-uploads-prod][0m
+[0m[1maws_s3_bucket.frontend: Refreshing state... [id=vanlife-frontend-prod][0m
+[0m[1maws_api_gateway_resource.proxy: Refreshing state... [id=7b3tke][0m
+[0m[1maws_api_gateway_method.proxy_options: Refreshing state... [id=agm-l9tfi28yik-7b3tke-OPTIONS][0m
+[0m[1maws_api_gateway_method.proxy: Refreshing state... [id=agm-l9tfi28yik-7b3tke-ANY][0m
+[0m[1maws_api_gateway_method_response.proxy_options: Refreshing state... [id=agmr-l9tfi28yik-7b3tke-OPTIONS-200][0m
+[0m[1maws_api_gateway_integration.proxy_options: Refreshing state... [id=agi-l9tfi28yik-7b3tke-OPTIONS][0m
+[0m[1maws_api_gateway_integration_response.proxy_options: Refreshing state... [id=agir-l9tfi28yik-7b3tke-OPTIONS-200][0m
+[0m[1maws_s3_bucket_public_access_block.frontend: Refreshing state... [id=vanlife-frontend-prod][0m
+[0m[1maws_s3_bucket_website_configuration.frontend: Refreshing state... [id=vanlife-frontend-prod][0m
+[0m[1maws_s3_bucket_versioning.data: Refreshing state... [id=vanlife-data-prod][0m
+[0m[1maws_s3_bucket_policy.frontend: Refreshing state... [id=vanlife-frontend-prod][0m
+[0m[1maws_s3_bucket_public_access_block.uploads: Refreshing state... [id=vanlife-uploads-prod][0m
+[0m[1maws_s3_bucket_cors_configuration.uploads: Refreshing state... [id=vanlife-uploads-prod][0m
+[0m[1maws_s3_bucket_policy.uploads: Refreshing state... [id=vanlife-uploads-prod][0m
+[0m[1mdata.aws_route53_zone.galliffet: Read complete after 1s [id=Z021960914V11SVZCSF5W][0m
+[0m[1maws_iam_role_policy.lambda_s3_policy: Refreshing state... [id=vanlife-lambda-role-prod:vanlife-lambda-s3-policy][0m
+[0m[1maws_iam_role_policy_attachment.lambda_basic: Refreshing state... [id=vanlife-lambda-role-prod-20260227174114302600000001][0m
+[0m[1maws_lambda_function.api: Refreshing state... [id=vanlife-api-prod][0m
+[0m[1maws_lambda_permission.api_gateway: Refreshing state... [id=AllowAPIGatewayInvoke][0m
+[0m[1maws_cloudwatch_log_group.api_logs: Refreshing state... [id=/aws/lambda/vanlife-api-prod][0m
+[0m[1maws_api_gateway_integration.api_proxy: Refreshing state... [id=agi-l9tfi28yik-7b3tke-ANY][0m
+[0m[1maws_api_gateway_deployment.api: Refreshing state... [id=v4wcvp][0m
+[0m[1maws_api_gateway_stage.api: Refreshing state... [id=ags-l9tfi28yik-prod][0m
+[0m[1maws_route53_record.api_gateway_www: Refreshing state... [id=Z021960914V11SVZCSF5W_www.api.vanlife.galliffet.fr_CNAME][0m
+[0m[1maws_route53_record.api_gateway: Refreshing state... [id=Z021960914V11SVZCSF5W_api.vanlife.galliffet.fr_CNAME][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # aws_acm_certificate.frontend[0m will be created
+[0m  [32m+[0m[0m resource "aws_acm_certificate" "frontend" {
+      [32m+[0m[0m arn                       = (known after apply)
+      [32m+[0m[0m domain_name               = "vanlife.galliffet.fr"
+      [32m+[0m[0m domain_validation_options = [
+          [32m+[0m[0m {
+              [32m+[0m[0m domain_name           = "vanlife.galliffet.fr"
+              [32m+[0m[0m resource_record_name  = (known after apply)
+              [32m+[0m[0m resource_record_type  = (known after apply)
+              [32m+[0m[0m resource_record_value = (known after apply)
+            },
+          [32m+[0m[0m {
+              [32m+[0m[0m domain_name           = "www.vanlife.galliffet.fr"
+              [32m+[0m[0m resource_record_name  = (known after apply)
+              [32m+[0m[0m resource_record_type  = (known after apply)
+              [32m+[0m[0m resource_record_value = (known after apply)
+            },
+        ]
+      [32m+[0m[0m id                        = (known after apply)
+      [32m+[0m[0m key_algorithm             = (known after apply)
+      [32m+[0m[0m not_after                 = (known after apply)
+      [32m+[0m[0m not_before                = (known after apply)
+      [32m+[0m[0m pending_renewal           = (known after apply)
+      [32m+[0m[0m renewal_eligibility       = (known after apply)
+      [32m+[0m[0m renewal_summary           = (known after apply)
+      [32m+[0m[0m status                    = (known after apply)
+      [32m+[0m[0m subject_alternative_names = [
+          [32m+[0m[0m "vanlife.galliffet.fr",
+          [32m+[0m[0m "www.vanlife.galliffet.fr",
+        ]
+      [32m+[0m[0m tags                      = {
+          [32m+[0m[0m "Name" = "vanlife-frontend-cert"
+        }
+      [32m+[0m[0m tags_all                  = {
+          [32m+[0m[0m "Name" = "vanlife-frontend-cert"
+        }
+      [32m+[0m[0m type                      = (known after apply)
+      [32m+[0m[0m validation_emails         = (known after apply)
+      [32m+[0m[0m validation_method         = "DNS"
+
+      [32m+[0m[0m options (known after apply)
+    }
+
+[1m  # aws_acm_certificate_validation.frontend[0m will be created
+[0m  [32m+[0m[0m resource "aws_acm_certificate_validation" "frontend" {
+      [32m+[0m[0m certificate_arn = (known after apply)
+      [32m+[0m[0m id              = (known after apply)
+
+      [32m+[0m[0m timeouts {
+          [32m+[0m[0m create = "5m"
+        }
+    }
+
+[1m  # aws_cloudfront_distribution.frontend[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudfront_distribution" "frontend" {
+      [32m+[0m[0m aliases                         = [
+          [32m+[0m[0m "vanlife.galliffet.fr",
+          [32m+[0m[0m "www.vanlife.galliffet.fr",
+        ]
+      [32m+[0m[0m arn                             = (known after apply)
+      [32m+[0m[0m caller_reference                = (known after apply)
+      [32m+[0m[0m continuous_deployment_policy_id = (known after apply)
+      [32m+[0m[0m default_root_object             = "index.html"
+      [32m+[0m[0m domain_name                     = (known after apply)
+      [32m+[0m[0m enabled                         = true
+      [32m+[0m[0m etag                            = (known after apply)
+      [32m+[0m[0m hosted_zone_id                  = (known after apply)
+      [32m+[0m[0m http_version                    = "http2"
+      [32m+[0m[0m id                              = (known after apply)
+      [32m+[0m[0m in_progress_validation_batches  = (known after apply)
+      [32m+[0m[0m is_ipv6_enabled                 = true
+      [32m+[0m[0m last_modified_time              = (known after apply)
+      [32m+[0m[0m price_class                     = "PriceClass_All"
+      [32m+[0m[0m retain_on_delete                = false
+      [32m+[0m[0m staging                         = false
+      [32m+[0m[0m status                          = (known after apply)
+      [32m+[0m[0m tags                            = {
+          [32m+[0m[0m "Environment" = "prod"
+          [32m+[0m[0m "Name"        = "vanlife-frontend-cdn"
+        }
+      [32m+[0m[0m tags_all                        = {
+          [32m+[0m[0m "Environment" = "prod"
+          [32m+[0m[0m "Name"        = "vanlife-frontend-cdn"
+        }
+      [32m+[0m[0m trusted_key_groups              = (known after apply)
+      [32m+[0m[0m trusted_signers                 = (known after apply)
+      [32m+[0m[0m wait_for_deployment             = true
+
+      [32m+[0m[0m custom_error_response {
+          [32m+[0m[0m error_caching_min_ttl = 3600
+          [32m+[0m[0m error_code            = 403
+          [32m+[0m[0m response_code         = 200
+          [32m+[0m[0m response_page_path    = "/index.html"
+        }
+      [32m+[0m[0m custom_error_response {
+          [32m+[0m[0m error_caching_min_ttl = 3600
+          [32m+[0m[0m error_code            = 404
+          [32m+[0m[0m response_code         = 200
+          [32m+[0m[0m response_page_path    = "/index.html"
+        }
+
+      [32m+[0m[0m default_cache_behavior {
+          [32m+[0m[0m allowed_methods        = [
+              [32m+[0m[0m "GET",
+              [32m+[0m[0m "HEAD",
+              [32m+[0m[0m "OPTIONS",
+            ]
+          [32m+[0m[0m cached_methods         = [
+              [32m+[0m[0m "GET",
+              [32m+[0m[0m "HEAD",
+            ]
+          [32m+[0m[0m compress               = true
+          [32m+[0m[0m default_ttl            = 3600
+          [32m+[0m[0m max_ttl                = 86400
+          [32m+[0m[0m min_ttl                = 0
+          [32m+[0m[0m target_origin_id       = "S3Frontend"
+          [32m+[0m[0m trusted_key_groups     = (known after apply)
+          [32m+[0m[0m trusted_signers        = (known after apply)
+          [32m+[0m[0m viewer_protocol_policy = "redirect-to-https"
+
+          [32m+[0m[0m forwarded_values {
+              [32m+[0m[0m headers                 = (known after apply)
+              [32m+[0m[0m query_string            = false
+              [32m+[0m[0m query_string_cache_keys = (known after apply)
+
+              [32m+[0m[0m cookies {
+                  [32m+[0m[0m forward           = "none"
+                  [32m+[0m[0m whitelisted_names = (known after apply)
+                }
+            }
+
+          [32m+[0m[0m grpc_config (known after apply)
+        }
+
+      [32m+[0m[0m ordered_cache_behavior {
+          [32m+[0m[0m allowed_methods        = [
+              [32m+[0m[0m "GET",
+              [32m+[0m[0m "HEAD",
+            ]
+          [32m+[0m[0m cached_methods         = [
+              [32m+[0m[0m "GET",
+              [32m+[0m[0m "HEAD",
+            ]
+          [32m+[0m[0m compress               = true
+          [32m+[0m[0m default_ttl            = 31536000
+          [32m+[0m[0m max_ttl                = 31536000
+          [32m+[0m[0m min_ttl                = 0
+          [32m+[0m[0m path_pattern           = "/assets/*"
+          [32m+[0m[0m target_origin_id       = "S3Frontend"
+          [32m+[0m[0m viewer_protocol_policy = "https-only"
+
+          [32m+[0m[0m forwarded_values {
+              [32m+[0m[0m headers                 = (known after apply)
+              [32m+[0m[0m query_string            = false
+              [32m+[0m[0m query_string_cache_keys = (known after apply)
+
+              [32m+[0m[0m cookies {
+                  [32m+[0m[0m forward = "none"
+                }
+            }
+
+          [32m+[0m[0m grpc_config (known after apply)
+        }
+
+      [32m+[0m[0m origin {
+          [32m+[0m[0m connection_attempts      = 3
+          [32m+[0m[0m connection_timeout       = 10
+          [32m+[0m[0m domain_name              = "vanlife-frontend-prod.s3.eu-west-3.amazonaws.com"
+          [32m+[0m[0m origin_id                = "S3Frontend"
+            [90m# (2 unchanged attributes hidden)[0m[0m
+
+          [32m+[0m[0m s3_origin_config {
+              [32m+[0m[0m origin_access_identity = (known after apply)
+            }
+        }
+
+      [32m+[0m[0m restrictions {
+          [32m+[0m[0m geo_restriction {
+              [32m+[0m[0m locations        = (known after apply)
+              [32m+[0m[0m restriction_type = "none"
+            }
+        }
+
+      [32m+[0m[0m viewer_certificate {
+          [32m+[0m[0m acm_certificate_arn            = (known after apply)
+          [32m+[0m[0m cloudfront_default_certificate = false
+          [32m+[0m[0m minimum_protocol_version       = "TLSv1.2_2021"
+          [32m+[0m[0m ssl_support_method             = "sni-only"
+        }
+    }
+
+[1m  # aws_cloudfront_origin_access_identity.frontend[0m will be created
+[0m  [32m+[0m[0m resource "aws_cloudfront_origin_access_identity" "frontend" {
+      [32m+[0m[0m arn                             = (known after apply)
+      [32m+[0m[0m caller_reference                = (known after apply)
+      [32m+[0m[0m cloudfront_access_identity_path = (known after apply)
+      [32m+[0m[0m comment                         = "OAI pour vanlife frontend"
+      [32m+[0m[0m etag                            = (known after apply)
+      [32m+[0m[0m iam_arn                         = (known after apply)
+      [32m+[0m[0m id                              = (known after apply)
+      [32m+[0m[0m s3_canonical_user_id            = (known after apply)
+    }
+
+[1m  # aws_route53_record.acm_validation["vanlife.galliffet.fr"][0m will be created
+[0m  [32m+[0m[0m resource "aws_route53_record" "acm_validation" {
+      [32m+[0m[0m allow_overwrite = true
+      [32m+[0m[0m fqdn            = (known after apply)
+      [32m+[0m[0m id              = (known after apply)
+      [32m+[0m[0m name            = (known after apply)
+      [32m+[0m[0m records         = (known after apply)
+      [32m+[0m[0m ttl             = 60
+      [32m+[0m[0m type            = (known after apply)
+      [32m+[0m[0m zone_id         = "Z021960914V11SVZCSF5W"
+    }
+
+[1m  # aws_route53_record.acm_validation["www.vanlife.galliffet.fr"][0m will be created
+[0m  [32m+[0m[0m resource "aws_route53_record" "acm_validation" {
+      [32m+[0m[0m allow_overwrite = true
+      [32m+[0m[0m fqdn            = (known after apply)
+      [32m+[0m[0m id              = (known after apply)
+      [32m+[0m[0m name            = (known after apply)
+      [32m+[0m[0m records         = (known after apply)
+      [32m+[0m[0m ttl             = 60
+      [32m+[0m[0m type            = (known after apply)
+      [32m+[0m[0m zone_id         = "Z021960914V11SVZCSF5W"
+    }
+
+[1m  # aws_route53_record.frontend_cloudfront[0m will be created
+[0m  [32m+[0m[0m resource "aws_route53_record" "frontend_cloudfront" {
+      [32m+[0m[0m allow_overwrite = (known after apply)
+      [32m+[0m[0m fqdn            = (known after apply)
+      [32m+[0m[0m id              = (known after apply)
+      [32m+[0m[0m name            = "vanlife.galliffet.fr"
+      [32m+[0m[0m type            = "A"
+      [32m+[0m[0m zone_id         = "Z021960914V11SVZCSF5W"
+
+      [32m+[0m[0m alias {
+          [32m+[0m[0m evaluate_target_health = false
+          [32m+[0m[0m name                   = (known after apply)
+          [32m+[0m[0m zone_id                = (known after apply)
+        }
+    }
+
+[1m  # aws_route53_record.frontend_cloudfront_www[0m will be created
+[0m  [32m+[0m[0m resource "aws_route53_record" "frontend_cloudfront_www" {
+      [32m+[0m[0m allow_overwrite = (known after apply)
+      [32m+[0m[0m fqdn            = (known after apply)
+      [32m+[0m[0m id              = (known after apply)
+      [32m+[0m[0m name            = "www.vanlife.galliffet.fr"
+      [32m+[0m[0m type            = "A"
+      [32m+[0m[0m zone_id         = "Z021960914V11SVZCSF5W"
+
+      [32m+[0m[0m alias {
+          [32m+[0m[0m evaluate_target_health = false
+          [32m+[0m[0m name                   = (known after apply)
+          [32m+[0m[0m zone_id                = (known after apply)
+        }
+    }
+
+[1m  # aws_s3_bucket_policy.cloudfront_access[0m will be created
+[0m  [32m+[0m[0m resource "aws_s3_bucket_policy" "cloudfront_access" {
+      [32m+[0m[0m bucket = "vanlife-frontend-prod"
+      [32m+[0m[0m id     = (known after apply)
+      [32m+[0m[0m policy = (known after apply)
+    }
+
+[1mPlan:[0m [0m9 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  [32m+[0m[0m frontend_cloudfront_domain = (known after apply)
+  [33m~[0m[0m frontend_url               = "http://vanlife-frontend-prod.s3-website.eu-west-3.amazonaws.com" [33m->[0m[0m "https://vanlife.galliffet.fr"
+[0m[1maws_cloudfront_origin_access_identity.frontend: Creating...[0m[0m
+[0m[1maws_acm_certificate.frontend: Creating...[0m[0m
+[0m[1maws_cloudfront_origin_access_identity.frontend: Creation complete after 1s [id=E29793LR15CDD9][0m
+[0m[1maws_s3_bucket_policy.cloudfront_access: Creating...[0m[0m
+[0m[1maws_acm_certificate.frontend: Creation complete after 4s [id=arn:aws:acm:us-east-1:851725461344:certificate/ae00b8c9-1771-43a6-8b92-7bdb02c8d660][0m
+[0m[1maws_route53_record.acm_validation["vanlife.galliffet.fr"]: Creating...[0m[0m
+[0m[1maws_route53_record.acm_validation["www.vanlife.galliffet.fr"]: Creating...[0m[0m
+[0m[1maws_s3_bucket_policy.cloudfront_access: Creation complete after 5s [id=vanlife-frontend-prod][0m
+[0m[1maws_route53_record.acm_validation["vanlife.galliffet.fr"]: Still creating... [00m10s elapsed][0m[0m
+[0m[1maws_route53_record.acm_validation["www.vanlife.galliffet.fr"]: Still creating... [00m10s elapsed][0m[0m
+[0m[1maws_route53_record.acm_validation["www.vanlife.galliffet.fr"]: Still creating... [00m20s elapsed][0m[0m
+[0m[1maws_route53_record.acm_validation["vanlife.galliffet.fr"]: Still creating... [00m20s elapsed][0m[0m
+[0m[1maws_route53_record.acm_validation["vanlife.galliffet.fr"]: Still creating... [00m27s elapsed][0m[0m
+[0m[1maws_route53_record.acm_validation["www.vanlife.galliffet.fr"]: Still creating... [00m27s elapsed][0m[0m
+[0m[1maws_route53_record.acm_validation["vanlife.galliffet.fr"]: Creation complete after 30s [id=Z021960914V11SVZCSF5W__e92a1327ce0ce94328ee44377f02213f.vanlife.galliffet.fr._CNAME][0m
+[0m[1maws_route53_record.acm_validation["www.vanlife.galliffet.fr"]: Creation complete after 30s [id=Z021960914V11SVZCSF5W__56180216ed9bf2f0353fbe59da1336d0.www.vanlife.galliffet.fr._CNAME][0m
+[0m[1maws_acm_certificate_validation.frontend: Creating...[0m[0m
+[0m[1maws_acm_certificate_validation.frontend: Creation complete after 1s [id=2026-02-27 17:55:39.623 +0000 UTC][0m
+[0m[1maws_cloudfront_distribution.frontend: Creating...[0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [00m10s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [00m20s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [00m27s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [00m37s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [00m47s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [00m55s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [01m05s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [01m15s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [01m25s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [01m32s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [01m42s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [01m52s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [02m00s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [02m10s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [02m20s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [02m27s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [02m37s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [02m47s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [02m55s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [03m05s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [03m15s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [03m22s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [03m32s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [03m42s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [03m52s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [04m00s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [04m10s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [04m20s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [04m28s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [04m38s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [04m48s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [04m55s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [05m05s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Still creating... [05m15s elapsed][0m[0m
+[0m[1maws_cloudfront_distribution.frontend: Creation complete after 5m19s [id=E4F9EWKUC66XM][0m
+[0m[1maws_route53_record.frontend_cloudfront_www: Creating...[0m[0m
+[0m[1maws_route53_record.frontend_cloudfront: Creating...[0m[0m
+[0m[1maws_route53_record.frontend_cloudfront_www: Still creating... [00m07s elapsed][0m[0m
+[0m[1maws_route53_record.frontend_cloudfront_www: Still creating... [00m17s elapsed][0m[0m
+[0m[1maws_route53_record.frontend_cloudfront_www: Still creating... [00m27s elapsed][0m[0m
+[0m[1maws_route53_record.frontend_cloudfront_www: Creation complete after 30s [id=Z021960914V11SVZCSF5W_www.vanlife.galliffet.fr_A][0m
+[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1mcreating Route53 Record: operation error Route 53: ChangeResourceRecordSets, https response error StatusCode: 400, RequestID: aa8df355-930e-47e6-bf0e-e2b3319c6fc2, InvalidChangeBatch: [Tried to create resource record set [name='vanlife.galliffet.fr.', type='A'] but it already exists][0m
+[31m│[0m [0m
+[31m│[0m [0m[0m  with aws_route53_record.frontend_cloudfront,
+[31m│[0m [0m  on cloudfront.tf line 171, in resource "aws_route53_record" "frontend_cloudfront":
+[31m│[0m [0m 171: resource "aws_route53_record" "frontend_cloudfront" [4m{[0m[0m
+[31m│[0m [0m
+[31m╵[0m[0m

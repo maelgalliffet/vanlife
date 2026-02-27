@@ -4,15 +4,16 @@ import "react-calendar/dist/Calendar.css";
 import { Booking, BookingType, PhotoItem, User } from "./types";
 
 // Construire l'API URL de manière dynamique à l'exécution
-// En production, utiliser /api (proxy Nginx)
+// En production, utiliser VITE_API_URL variable d'environnement
 // En développement, utiliser localhost:4000
 const getApiUrl = () => {
   // Si on est en dev (Vite dev server)
   if (import.meta.env.DEV) {
     return "http://localhost:4000";
   }
-  // En production, utiliser le proxy Nginx sur /api
-  return "/api";
+  // En production, utiliser l'URL définie à la build time (VITE_API_URL)
+  // Par défaut: API Gateway Lambda
+  return import.meta.env.VITE_API_URL || "https://l9tfi28yik.execute-api.eu-west-3.amazonaws.com/prod";
 };
 
 const API_URL = getApiUrl();
