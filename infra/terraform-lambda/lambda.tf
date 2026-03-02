@@ -12,10 +12,10 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      NODE_ENV        = var.environment
-      DATA_BUCKET     = aws_s3_bucket.data.id
-      UPLOADS_BUCKET  = aws_s3_bucket.uploads.id
-      UPLOADS_BASE_URL = "https://${aws_s3_bucket.uploads.bucket}.s3.${var.aws_region}.amazonaws.com"
+      NODE_ENV           = var.environment
+      DATA_BUCKET        = aws_s3_bucket.data.id
+      UPLOADS_BUCKET     = aws_s3_bucket.uploads.id
+      CLOUDFRONT_DOMAIN  = aws_cloudfront_distribution.frontend.domain_name
     }
   }
 

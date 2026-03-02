@@ -1,9 +1,9 @@
 # Certificat ACM pour le domaine (requis en us-east-1 pour CloudFront)
 resource "aws_acm_certificate" "frontend" {
-  provider          = aws.us_east_1
-  domain_name       = var.domain_name
+  provider                  = aws.us_east_1
+  domain_name               = var.domain_name
   subject_alternative_names = ["www.${var.domain_name}"]
-  validation_method = "DNS"
+  validation_method         = "DNS"
 
   tags = {
     Name = "${var.project_name}-frontend-cert"
@@ -56,6 +56,16 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 
+  # Origin pour les uploads
+  origin {
+    domain_name = aws_s3_bucket.uploads.bucket_regional_domain_name
+    origin_id   = "S3Uploads"
+
+    s3_origin_config {
+      origin_access_identity = aws_cloudfront_origin_access_identity.uploads.cloudfront_access_identity_path
+    }
+  }
+
   enabled             = true
   default_root_object = "index.html"
   is_ipv6_enabled     = true
@@ -100,7 +110,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     viewer_protocol_policy = "https-only"
     min_ttl                = 0
-    default_ttl            = 31536000  # 1 année pour les assets versionnés
+    default_ttl            = 31536000 # 1 année pour les assets versionnés
     max_ttl                = 31536000
   }
 
@@ -145,7 +155,7 @@ resource "aws_cloudfront_origin_access_identity" "frontend" {
   comment = "OAI pour ${var.project_name} frontend"
 }
 
-# Policy S3 pour CloudFront
+# Policy S3 pour CloudFront (frontend)
 resource "aws_s3_bucket_policy" "cloudfront_access" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -171,21 +181,6 @@ resource "aws_s3_bucket_policy" "cloudfront_access" {
 resource "aws_route53_record" "frontend_cloudfront" {
   zone_id = data.aws_route53_zone.galliffet.zone_id
   name    = var.domain_name
-  type    = "A"
-
-  alias {
-    name                   = aws_cloudfront_distribution.frontend.domain_name
-    zone_id                = aws_cloudfront_distribution.frontend.hosted_zone_id
-    evaluate_target_health = false
-  }
-
-  depends_on = [aws_cloudfront_distribution.frontend]
-}
-
-# Alias Route 53 pour www
-resource "aws_route53_record" "frontend_cloudfront_www" {
-  zone_id = data.aws_route53_zone.galliffet.zone_id
-  name    = "www.${var.domain_name}"
   type    = "A"
 
   alias {

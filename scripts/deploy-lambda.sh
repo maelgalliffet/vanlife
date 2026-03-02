@@ -55,7 +55,7 @@ log "2b. Initialisation de Terraform avec backend S3..."
 cd "$TERRAFORM_DIR"
 terraform init -reconfigure
 log "Création/mise à jour de l'infrastructure..."
-terraform apply -auto-approve
+terraform apply -lock=false -auto-approve
 cd ../..
 success "Infrastructure déployée"
 echo ""

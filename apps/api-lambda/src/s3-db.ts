@@ -1,10 +1,10 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION || "eu-west-3" });
 
 const DATA_BUCKET = process.env.DATA_BUCKET!;
 const UPLOADS_BUCKET = process.env.UPLOADS_BUCKET!;
+const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || `${UPLOADS_BUCKET}.s3.${process.env.AWS_REGION || "eu-west-3"}.amazonaws.com`;
 const DB_KEY = "db.json";
 
 export interface User {
@@ -93,42 +93,48 @@ export async function uploadFileToS3(
     bufferType: typeof buffer,
     bufferIsBuffer: Buffer.isBuffer(buffer),
     bufferLength: buffer?.length || 0,
-    // First 100 chars to see if it's base64 string
-    bufferPreview: typeof buffer === 'string' ? (buffer as string).substring(0, 100) : 'Buffer'
   });
 
-  // Ensure Body is a Buffer (not a string)
+  // Ensure Body is a Buffer
+  // NOTE: Multer with memoryStorage should ALWAYS provide a Buffer, not a string
+  // Do NOT attempt to decode base64 strings - this corrupts binary data
   let body: Buffer;
-  if (typeof buffer === 'string') {
-    // If buffer is a string (base64), convert it back to Buffer
-    console.log('[UPLOAD DEBUG] Converting string to Buffer (assuming base64)');
-    body = Buffer.from(buffer, 'base64');
-  } else if (Buffer.isBuffer(buffer)) {
-    console.log('[UPLOAD DEBUG] Buffer is already a Buffer');
+  if (Buffer.isBuffer(buffer)) {
+    console.log('[UPLOAD DEBUG] Buffer is a Buffer (OK)');
     body = buffer;
+  } else if (typeof buffer === 'string') {
+    // This should not happen with multer memoryStorage
+    // If it does, the data is already corrupted upstream
+    console.warn('[UPLOAD WARNING] Buffer is string (unexpected), converting with UTF-8 encoding');
+    body = Buffer.from(buffer, 'utf-8');
   } else {
-    // Fallback: convert to buffer if it's something else
-    console.log('[UPLOAD DEBUG] Converting unknown type to Buffer');
-    body = Buffer.from(buffer);
+    console.error('[UPLOAD ERROR] Unexpected buffer type:', typeof buffer);
+    body = Buffer.from(String(buffer));
   }
 
   console.log('[UPLOAD DEBUG] Final body size:', body.length);
+  console.log('[UPLOAD DEBUG] Uploading to bucket:', UPLOADS_BUCKET, 'with key:', key);
 
-  const upload = new Upload({
-    client: s3Client,
-    params: {
+  try {
+    // Use PutObjectCommand directly instead of Upload for better reliability in Lambda
+    const command = new PutObjectCommand({
       Bucket: UPLOADS_BUCKET,
       Key: key,
       Body: body,
       ContentType: file.mimetype,
-      CacheControl: "max-age=31536000", // 1 year for immutable uploads
-    },
-  });
+      CacheControl: "max-age=31536000",
+    });
 
-  await upload.done();
-  const url = `https://${UPLOADS_BUCKET}.s3.${process.env.AWS_REGION || "eu-west-3"}.amazonaws.com/${key}`;
-  console.log('[UPLOAD DEBUG] Upload completed:', url);
-  return url;
+    const result = await s3Client.send(command);
+    const url = `https://${CLOUDFRONT_DOMAIN}/${key}`;
+    console.log('[UPLOAD DEBUG] Upload completed successfully:', url);
+    console.log('[UPLOAD DEBUG] Upload ETag:', result.ETag);
+    return url;
+  } catch (error) {
+    console.error('[UPLOAD ERROR] Failed to upload file:', error);
+    console.error('[UPLOAD ERROR] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    throw error;
+  }
 }
 
 // Delete file from S3

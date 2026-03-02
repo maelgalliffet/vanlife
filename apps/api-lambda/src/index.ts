@@ -6,20 +6,13 @@ import { v4 as uuidv4 } from "uuid";
 import { readDb, writeDb, uploadFileToS3, deleteFileFromS3, Booking } from "./s3-db.js";
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  // Important: Don't set encoding - multer should preserve binary data as-is
+});
 
 app.use(cors({ origin: "*" }));
-
-// Custom middleware to parse JSON but skip multipart/form-data
-app.use((req, res, next) => {
-  // Skip JSON parsing for multipart/form-data (multer will handle it)
-  if (req.is('multipart/form-data')) {
-    return next();
-  }
-
-  // Parse JSON for all other requests
-  express.json()(req, res, next);
-});
 
 // Helper functions
 function getDateKeysBetween(startDateStr: string, endDateStr: string): string[] {
@@ -167,8 +160,6 @@ app.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ ty
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     const photoUrls: string[] = [];
 
-    console.log('[POST /bookings] Files received:', files.length);
-
     for (const file of files) {
       const lastDotIndex = file.originalname.lastIndexOf(".");
       const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
@@ -257,8 +248,6 @@ app.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id: s
     // Upload new photos
     const uploadedFiles = (req.files as Express.Multer.File[] | undefined) ?? [];
     const addedPhotoUrls: string[] = [];
-
-    console.log('[PUT /bookings/:id] Files received:', uploadedFiles.length);
 
     for (const file of uploadedFiles) {
       const lastDotIndex = file.originalname.lastIndexOf(".");
@@ -518,14 +507,10 @@ app.delete("/bookings/:bookingId/comments/:commentId", async (req: Request<{ boo
 });
 
 // Export handler wrapped with serverless-http
-// Configure binary media types for API Gateway
+// Configure serverless-http to handle binary data correctly
+// Reference: https://github.com/dougmoscrop/serverless-http#binary-types
+// IMPORTANT: multipart/form-data contains binary files, so it must be treated as binary
+// to prevent base64 double-encoding corruption of file data
 export const handler = serverless(app, {
-  binary: ['multipart/form-data', 'image/*', 'application/octet-stream'],
-  request: (request: any, event: any) => {
-    // Force binary mode for multipart requests
-    if (event.headers &&
-      (event.headers['content-type'] || event.headers['Content-Type'] || '').includes('multipart/form-data')) {
-      request.body = event.isBase64Encoded ? Buffer.from(event.body, 'base64') : event.body;
-    }
-  }
+  binary: ['multipart/form-data'],
 });
