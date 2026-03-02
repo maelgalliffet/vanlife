@@ -8,7 +8,6 @@ echo "🔧 Initialisation du backend Terraform S3..."
 
 BUCKET_NAME="vanlife-terraform-state"
 REGION="eu-west-3"
-DYNAMODB_TABLE="terraform-locks"
 
 # Vérifier que AWS CLI est disponible
 if ! command -v aws &> /dev/null; then
@@ -46,30 +45,11 @@ else
   echo "✅ Bucket existe déjà"
 fi
 
-# Créer la table DynamoDB pour les locks
-echo "🔐 Vérification de la table DynamoDB '$DYNAMODB_TABLE'..."
-if ! aws dynamodb describe-table --table-name "$DYNAMODB_TABLE" --region "$REGION" 2>/dev/null; then
-  echo "   Création de la table..."
-  aws dynamodb create-table \
-    --table-name "$DYNAMODB_TABLE" \
-    --attribute-definitions AttributeName=LockID,AttributeType=S \
-    --key-schema AttributeName=LockID,KeyType=HASH \
-    --billing-mode PAY_PER_REQUEST \
-    --region "$REGION"
-  
-  # Attendre que la table soit active
-  echo "   Attente de l'activation de la table..."
-  aws dynamodb wait table-exists --table-name "$DYNAMODB_TABLE" --region "$REGION"
-  echo "✅ Table créée et activée"
-else
-  echo "✅ Table existe déjà"
-fi
-
 echo ""
 echo "✨ Backend S3 prêt!"
 echo ""
 echo "Prochaines étapes:"
-echo "1. cd infra/terraform-lambda"
+echo "1. cd terraform"
 echo "2. terraform init -reconfigure"
 echo "3. terraform plan"
 echo "4. terraform apply"

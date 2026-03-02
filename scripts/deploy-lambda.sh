@@ -22,7 +22,7 @@ warn() {
   echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
-TERRAFORM_DIR="infra/terraform-lambda"
+TERRAFORM_DIR="terraform"
 API_LAMBDA_DIR="apps/api-lambda"
 WEB_DIR="apps/web"
 DIST_DIR="dist"
@@ -30,15 +30,13 @@ DIST_DIR="dist"
 log "🚀 Déploiement sur AWS Lambda + S3"
 echo ""
 
-# 1. Build Lambda function
-log "1. Construction de la fonction Lambda..."
+# 1. Build Lambda function (Terraform créera le ZIP)
+log "1. Préparation de la fonction Lambda..."
 cd "$API_LAMBDA_DIR"
 npm install
-npm run package
+npm run prepare-lambda
 cd ../..
-mkdir -p "$DIST_DIR"
-mv "$API_LAMBDA_DIR/lambda-api.zip" "$DIST_DIR/"
-success "Fonction Lambda packagée"
+success "Code Lambda préparé (Terraform créera le ZIP)"
 echo ""
 
 # 2. Deploy infrastructure with Terraform
@@ -55,8 +53,8 @@ log "2b. Initialisation de Terraform avec backend S3..."
 cd "$TERRAFORM_DIR"
 terraform init -reconfigure
 log "Création/mise à jour de l'infrastructure..."
-terraform apply -auto-approve
-cd ../..
+terraform apply -lock=false -auto-approve
+cd ..
 success "Infrastructure déployée"
 echo ""
 
@@ -68,18 +66,20 @@ FRONTEND_BUCKET=$(terraform output -raw frontend_bucket)
 UPLOADS_BUCKET=$(terraform output -raw uploads_bucket)
 DATA_BUCKET=$(terraform output -raw data_bucket)
 FRONTEND_URL=$(terraform output -raw frontend_url)
-cd ../..
+CLOUDFRONT_DIST_ID=$(terraform output -raw cloudfront_distribution_id)
+cd ..
 success "Configuration récupérée"
 echo ""
 
 log "  API URL: $API_URL"
 log "  Frontend Bucket: $FRONTEND_BUCKET"
 log "  Frontend URL: $FRONTEND_URL"
+log "  CloudFront Distribution: $CLOUDFRONT_DIST_ID"
 echo ""
 
 # 4. Build frontend with API URL
 log "4. Construction du frontend..."
-export VITE_API_URL="$API_URL"
+# Le frontend utilise /api (CloudFront proxy) donc pas besoin de VITE_API_URL
 npm run build -w apps/web
 success "Frontend construit"
 echo ""
@@ -88,6 +88,22 @@ echo ""
 log "5. Déploiement du frontend sur S3..."
 aws s3 sync "$WEB_DIR/dist" "s3://$FRONTEND_BUCKET" --delete
 success "Frontend déployé"
+echo ""
+
+# 5b. Invalidate CloudFront cache
+log "5b. Invalidation du cache CloudFront..."
+INVALIDATION_OUTPUT=$(aws cloudfront create-invalidation \
+  --distribution-id "$CLOUDFRONT_DIST_ID" \
+  --paths "/*" 2>&1)
+
+if [ $? -eq 0 ]; then
+  INVALIDATION_ID=$(echo "$INVALIDATION_OUTPUT" | grep -o '"Id": "[^"]*"' | head -1 | cut -d'"' -f4)
+  success "Invalidation créée (ID: $INVALIDATION_ID)"
+  log "Le cache sera vidé dans 2-5 minutes"
+else
+  warn "Échec de l'invalidation CloudFront"
+  log "Vous pouvez le faire manuellement: aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DIST_ID --paths '/*'"
+fi
 echo ""
 
 # 6. Upload initial data if needed
@@ -125,8 +141,11 @@ echo "🔌 API: $API_URL"
 echo ""
 echo "📊 Coût estimé: ~3-5€/mois"
 echo ""
+echo "⚠️  L'application sera disponible dans 2-5 minutes (invalidation CloudFront en cours)"
+echo ""
 echo "Pour mettre à jour uniquement le frontend:"
 echo "  aws s3 sync $WEB_DIR/dist s3://$FRONTEND_BUCKET --delete"
+echo "  aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DIST_ID --paths '/*'"
 echo ""
 echo "Pour mettre à jour la Lambda:"
 echo "  cd $API_LAMBDA_DIR && npm run package && cd ../.."

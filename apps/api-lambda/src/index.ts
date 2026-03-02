@@ -1,25 +1,19 @@
 import serverless from "serverless-http";
-import express, { Request } from "express";
+import express, { Request, Router } from "express";
 import cors from "cors";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import { readDb, writeDb, uploadFileToS3, deleteFileFromS3, Booking } from "./s3-db.js";
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB
+const router = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  // Important: Don't set encoding - multer should preserve binary data as-is
+});
 
 app.use(cors({ origin: "*" }));
-
-// Custom middleware to parse JSON but skip multipart/form-data
-app.use((req, res, next) => {
-  // Skip JSON parsing for multipart/form-data (multer will handle it)
-  if (req.is('multipart/form-data')) {
-    return next();
-  }
-
-  // Parse JSON for all other requests
-  express.json()(req, res, next);
-});
 
 // Helper functions
 function getDateKeysBetween(startDateStr: string, endDateStr: string): string[] {
@@ -60,11 +54,11 @@ function parseRemovePhotoUrls(value: string | undefined): string[] {
 type BookingType = "provisional" | "definitive";
 
 // Routes
-app.get("/health", (_req, res) => {
+router.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/users", async (_req, res) => {
+router.get("/users", async (_req, res) => {
   try {
     const db = await readDb();
     res.json(db.users);
@@ -74,7 +68,7 @@ app.get("/users", async (_req, res) => {
   }
 });
 
-app.get("/bookings", async (req, res) => {
+router.get("/bookings", async (req, res) => {
   try {
     const db = await readDb();
     const dateKey = typeof req.query.dateKey === "string" ? req.query.dateKey : null;
@@ -91,7 +85,7 @@ app.get("/bookings", async (req, res) => {
   }
 });
 
-app.get("/photos", async (_req, res) => {
+router.get("/photos", async (_req, res) => {
   try {
     const db = await readDb();
     const photos: any[] = [];
@@ -118,7 +112,7 @@ app.get("/photos", async (_req, res) => {
   }
 });
 
-app.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ type: BookingType }>, res) => {
+router.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ type: BookingType }>, res) => {
   try {
     const type = req.params.type;
     if (type !== "provisional" && type !== "definitive") {
@@ -170,7 +164,7 @@ app.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ ty
     for (const file of files) {
       const lastDotIndex = file.originalname.lastIndexOf(".");
       const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
-      const key = `${Date.now()}-${uuidv4()}${extension}`;
+      const key = `uploads/${Date.now()}-${uuidv4()}${extension}`;
       const url = await uploadFileToS3(file, key);
       photoUrls.push(url);
     }
@@ -201,7 +195,7 @@ app.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ ty
   }
 });
 
-app.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id: string }>, res) => {
+router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id: string }>, res) => {
   try {
     const bookingId = req.params.id;
     const db = await readDb();
@@ -259,7 +253,7 @@ app.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id: s
     for (const file of uploadedFiles) {
       const lastDotIndex = file.originalname.lastIndexOf(".");
       const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
-      const key = `${Date.now()}-${uuidv4()}${extension}`;
+      const key = `uploads/${Date.now()}-${uuidv4()}${extension}`;
       const url = await uploadFileToS3(file, key);
       addedPhotoUrls.push(url);
     }
@@ -287,7 +281,7 @@ app.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id: s
   }
 });
 
-app.delete("/bookings/:id", async (req: Request<{ id: string }>, res) => {
+router.delete("/bookings/:id", async (req: Request<{ id: string }>, res) => {
   try {
     const bookingId = req.params.id;
     const requesterUserId =
@@ -328,7 +322,7 @@ app.delete("/bookings/:id", async (req: Request<{ id: string }>, res) => {
 });
 
 // Reaction routes
-app.post("/bookings/:id/reactions", async (req: Request<{ id: string }>, res) => {
+router.post("/bookings/:id/reactions", async (req: Request<{ id: string }>, res) => {
   try {
     const bookingId = req.params.id;
     const { userId, emoji } = req.body as { userId?: string; emoji?: string };
@@ -357,7 +351,7 @@ app.post("/bookings/:id/reactions", async (req: Request<{ id: string }>, res) =>
   }
 });
 
-app.delete("/bookings/:id/reactions/:userId", async (req: Request<{ id: string; userId: string }>, res) => {
+router.delete("/bookings/:id/reactions/:userId", async (req: Request<{ id: string; userId: string }>, res) => {
   try {
     const { id: bookingId, userId } = req.params;
 
@@ -382,7 +376,7 @@ app.delete("/bookings/:id/reactions/:userId", async (req: Request<{ id: string; 
 });
 
 // Comment routes
-app.post("/bookings/:id/comments", async (req: Request<{ id: string }>, res) => {
+router.post("/bookings/:id/comments", async (req: Request<{ id: string }>, res) => {
   try {
     const bookingId = req.params.id;
     const { userId, text } = req.body as { userId?: string; text?: string };
@@ -470,7 +464,7 @@ app.patch("/bookings/:bookingId/comments/:commentId", async (req: Request<{ book
 });
 
 // Delete comment
-app.delete("/bookings/:bookingId/comments/:commentId", async (req: Request<{ bookingId: string; commentId: string }>, res) => {
+router.delete("/bookings/:bookingId/comments/:commentId", async (req: Request<{ bookingId: string; commentId: string }>, res) => {
   try {
     const { bookingId, commentId } = req.params;
     const requesterUserId =
@@ -513,5 +507,14 @@ app.delete("/bookings/:bookingId/comments/:commentId", async (req: Request<{ boo
   }
 });
 
+// Mount router on /api path (CloudFront forwards /api/*, Lambda sees /api/*)
+app.use('/api', router);
+
 // Export handler wrapped with serverless-http
-export const handler = serverless(app);
+// Configure serverless-http to handle binary data correctly
+// Reference: https://github.com/dougmoscrop/serverless-http#binary-types
+// IMPORTANT: multipart/form-data contains binary files, so it must be treated as binary
+// to prevent base64 double-encoding corruption of file data
+export const handler = serverless(app, {
+  binary: ['multipart/form-data'],
+});

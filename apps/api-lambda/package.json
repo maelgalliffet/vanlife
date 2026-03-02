@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc && npm run copy-files",
     "copy-files": "mkdir -p dist && cp package.json dist/",
-    "package": "npm run build && cd dist && npm install --production && zip -r ../lambda-api.zip ."
+    "package": "npm run build && cd dist && npm install --production && zip -r ../lambda-api.zip .",
+    "prepare-lambda": "npm run build && cd dist && npm install --production --omit=dev"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.515.0",

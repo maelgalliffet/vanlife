@@ -3,6 +3,11 @@ output "api_url" {
   value       = aws_api_gateway_stage.api.invoke_url
 }
 
+output "api_custom_domain" {
+  description = "Custom domain for API"
+  value       = "https://api.${var.domain_name}"
+}
+
 output "frontend_bucket" {
   description = "S3 bucket name for frontend"
   value       = aws_s3_bucket.frontend.id
@@ -16,6 +21,11 @@ output "frontend_url" {
 output "frontend_cloudfront_domain" {
   description = "CloudFront distribution domain"
   value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID"
+  value       = aws_cloudfront_distribution.frontend.id
 }
 
 output "uploads_bucket" {

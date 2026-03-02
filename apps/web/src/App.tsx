@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { Booking, BookingType, PhotoItem, User } from "./types";
@@ -11,9 +11,8 @@ const getApiUrl = () => {
   if (import.meta.env.DEV) {
     return "http://localhost:4000";
   }
-  // En production, utiliser l'URL définie à la build time (VITE_API_URL)
-  // Par défaut: API Gateway Lambda
-  return import.meta.env.VITE_API_URL || "https://l9tfi28yik.execute-api.eu-west-3.amazonaws.com/prod";
+  // En production, utiliser CloudFront /prod/api proxy (même domaine = pas de CORS)
+  return import.meta.env.VITE_API_URL || "/prod/api";
 };
 
 const API_URL = getApiUrl();
@@ -104,8 +103,10 @@ export default function App() {
   const [reservationType, setReservationType] = useState<BookingType>("provisional");
   const [note, setNote] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [devMessage, setDevMessage] = useState<string>("");
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
@@ -115,7 +116,9 @@ export default function App() {
   const [editNote, setEditNote] = useState("");
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
   const [editNewFiles, setEditNewFiles] = useState<FileList | null>(null);
+  const [editNewFilePreviews, setEditNewFilePreviews] = useState<string[]>([]);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const [isDeletingBooking, setIsDeletingBooking] = useState(false);
   const [editError, setEditError] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -206,6 +209,17 @@ export default function App() {
 
     if (files) {
       for (const file of Array.from(files)) {
+        // Validate file
+        if (!file.type.startsWith('image/')) {
+          setError('un des fichiers n\'est pas une image');
+          setIsSubmitting(false);
+          return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+          setError('un des fichiers est trop volumineux (max 50MB)');
+          setIsSubmitting(false);
+          return;
+        }
         formData.append("photos", file);
       }
     }
@@ -224,9 +238,14 @@ export default function App() {
 
     setNote("");
     setFiles(null);
+    setFilePreviews([]);
     setRangeStart(null);
     setRangeEnd(null);
     setShowBookingPopup(false);
+    // Reset the file input element
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     await refreshData();
     setIsSubmitting(false);
   }
@@ -238,6 +257,50 @@ export default function App() {
     }
 
     setActiveUser(selected);
+  }
+
+  function handleNewFiles(fileList: FileList | null) {
+    setFiles(fileList);
+
+    // Generate previews
+    if (fileList) {
+      const previews: string[] = [];
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previews.push(e.target?.result as string);
+          if (previews.length === fileList.length) {
+            setFilePreviews(previews);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } else {
+      setFilePreviews([]);
+    }
+  }
+
+  function handleNewEditFiles(fileList: FileList | null) {
+    setEditNewFiles(fileList);
+
+    // Generate previews
+    if (fileList) {
+      const previews: string[] = [];
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previews.push(e.target?.result as string);
+          if (previews.length === fileList.length) {
+            setEditNewFilePreviews(previews);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } else {
+      setEditNewFilePreviews([]);
+    }
   }
 
   function setActiveUser(userId: string) {
@@ -383,6 +446,15 @@ export default function App() {
 
     if (editNewFiles) {
       for (const file of Array.from(editNewFiles)) {
+        // Validate file
+        if (!file.type.startsWith('image/')) {
+          setEditError('un des fichiers n\'est pas une image');
+          return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+          setEditError('un des fichiers est trop volumineux (max 50MB)');
+          return;
+        }
         formData.append("photos", file);
       }
     }
@@ -400,6 +472,12 @@ export default function App() {
     }
 
     const updatedBooking = (await response.json()) as Booking;
+    setEditNewFiles(null);
+    setEditNewFilePreviews([]);
+    // Reset the edit file input element
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = "";
+    }
     await refreshData();
     setActiveBooking(updatedBooking);
     setIsSavingEdit(false);
@@ -959,12 +1037,24 @@ export default function App() {
                 <label>
                   Ajouter des images
                   <input
+                    ref={editFileInputRef}
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={(event) => setEditNewFiles(event.target.files)}
+                    onChange={(event) => handleNewEditFiles(event.target.files)}
                   />
                 </label>
+              )}
+
+              {editNewFilePreviews.length > 0 && (
+                <div className="photo-edit-grid">
+                  {editNewFilePreviews.map((preview, idx) => (
+                    <div key={idx} className="photo-edit-item">
+                      <img src={preview} alt={`Aperçu nouveau ${idx + 1}`} />
+                      <span style={{ fontSize: '12px', color: '#999' }}>Nouvelle photo</span>
+                    </div>
+                  ))}
+                </div>
               )}
 
               {editError && <p className="error">{editError}</p>}
@@ -1012,8 +1102,25 @@ export default function App() {
 
               <label>
                 Photos
-                <input type="file" accept="image/*" multiple onChange={(event) => setFiles(event.target.files)} />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) => handleNewFiles(event.target.files)}
+                />
               </label>
+
+              {filePreviews.length > 0 && (
+                <div className="photo-edit-grid">
+                  {filePreviews.map((preview, idx) => (
+                    <div key={idx} className="photo-edit-item">
+                      <img src={preview} alt={`Aperçu ${idx + 1}`} />
+                      <span style={{ fontSize: '12px', color: '#999' }}>À envoyer</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {error && <p className="error">{error}</p>}
 
