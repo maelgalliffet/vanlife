@@ -91,6 +91,7 @@ export async function uploadFileToS3(
       Key: key,
       Body: file.buffer,
       ContentType: file.mimetype,
+      CacheControl: "max-age=31536000", // 1 year for immutable uploads
     },
   });
 
@@ -103,7 +104,7 @@ export async function deleteFileFromS3(url: string): Promise<void> {
   // Extract key from URL
   const urlParts = url.split("/");
   const key = urlParts[urlParts.length - 1];
-  
+
   if (!key) return;
 
   const command = new DeleteObjectCommand({

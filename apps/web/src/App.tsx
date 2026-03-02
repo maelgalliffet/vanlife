@@ -121,6 +121,8 @@ export default function App() {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+  const [commentError, setCommentError] = useState<string>("");
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [showBookingPopup, setShowBookingPopup] = useState(false);
 
   useEffect(() => {
@@ -497,15 +499,22 @@ export default function App() {
       return;
     }
 
+    setIsDeletingComment(true);
+    setCommentError("");
+
     const response = await fetch(`${API_URL}/bookings/${bookingId}/comments/${commentId}?requesterUserId=${encodeURIComponent(currentUserId)}`, {
       method: "DELETE"
     });
 
     if (!response.ok) {
+      const payload = (await response.json()) as { message?: string };
+      setCommentError(payload.message ?? "Impossible de supprimer le commentaire");
+      setIsDeletingComment(false);
       return;
     }
 
     await refreshData();
+    setIsDeletingComment(false);
   }
 
   async function updateComment(bookingId: string, commentId: string) {
@@ -515,8 +524,11 @@ export default function App() {
 
     const text = editingCommentText.trim();
     if (!text) {
+      setCommentError("Le commentaire ne peut pas être vide");
       return;
     }
+
+    setCommentError("");
 
     const response = await fetch(`${API_URL}/bookings/${bookingId}/comments/${commentId}?requesterUserId=${encodeURIComponent(currentUserId)}`, {
       method: "PATCH",
@@ -527,6 +539,8 @@ export default function App() {
     });
 
     if (!response.ok) {
+      const payload = (await response.json()) as { message?: string };
+      setCommentError(payload.message ?? "Impossible de modifier le commentaire");
       return;
     }
 
@@ -785,10 +799,11 @@ export default function App() {
                           value={editingCommentText}
                           onChange={(event) => setEditingCommentText(event.target.value)}
                         />
+                        {commentError && <p className="error">{commentError}</p>}
                         <button type="button" onClick={() => void updateComment(booking.id, comment.id)}>
                           Enregistrer
                         </button>
-                        <button type="button" onClick={() => { setEditingCommentId(null); setEditingCommentText(""); }}>
+                        <button type="button" onClick={() => { setEditingCommentId(null); setEditingCommentText(""); setCommentError(""); }}>
                           Annuler
                         </button>
                       </div>
@@ -799,8 +814,8 @@ export default function App() {
                           {comment.updatedAt && <span> (modifié)</span>}
                           {currentUserId === comment.userId && (
                             <span className="comment-actions">
-                              <button type="button" onClick={() => { setEditingCommentId(comment.id); startEditingComment(comment.text); }} title="Modifier">✏️</button>
-                              <button type="button" onClick={() => void deleteComment(booking.id, comment.id)} title="Supprimer">🗑️</button>
+                              <button type="button" onClick={() => { setEditingCommentId(comment.id); startEditingComment(comment.text); setCommentError(""); }} title="Modifier">Modifier</button>
+                              <button type="button" onClick={() => void deleteComment(booking.id, comment.id)} disabled={isDeletingComment} title="Supprimer">Supprimer</button>
                             </span>
                           )}
                         </p>

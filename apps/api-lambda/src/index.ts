@@ -6,10 +6,20 @@ import { v4 as uuidv4 } from "uuid";
 import { readDb, writeDb, uploadFileToS3, deleteFileFromS3, Booking } from "./s3-db.js";
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB
 
 app.use(cors({ origin: "*" }));
-app.use(express.json());
+
+// Custom middleware to parse JSON but skip multipart/form-data
+app.use((req, res, next) => {
+  // Skip JSON parsing for multipart/form-data (multer will handle it)
+  if (req.is('multipart/form-data')) {
+    return next();
+  }
+
+  // Parse JSON for all other requests
+  express.json()(req, res, next);
+});
 
 // Helper functions
 function getDateKeysBetween(startDateStr: string, endDateStr: string): string[] {
@@ -156,9 +166,11 @@ app.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ ty
 
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     const photoUrls: string[] = [];
-    
+
     for (const file of files) {
-      const key = `${Date.now()}-${uuidv4()}${file.originalname.substring(file.originalname.lastIndexOf("."))}`;
+      const lastDotIndex = file.originalname.lastIndexOf(".");
+      const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
+      const key = `${Date.now()}-${uuidv4()}${extension}`;
       const url = await uploadFileToS3(file, key);
       photoUrls.push(url);
     }
@@ -234,7 +246,7 @@ app.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id: s
 
     const removePhotoUrls = parseRemovePhotoUrls(payload.removePhotoUrls);
     const keptPhotoUrls = currentBooking.photoUrls.filter((url) => !removePhotoUrls.includes(url));
-    
+
     // Delete removed photos from S3
     for (const url of removePhotoUrls) {
       await deleteFileFromS3(url);
@@ -243,9 +255,11 @@ app.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id: s
     // Upload new photos
     const uploadedFiles = (req.files as Express.Multer.File[] | undefined) ?? [];
     const addedPhotoUrls: string[] = [];
-    
+
     for (const file of uploadedFiles) {
-      const key = `${Date.now()}-${uuidv4()}${file.originalname.substring(file.originalname.lastIndexOf("."))}`;
+      const lastDotIndex = file.originalname.lastIndexOf(".");
+      const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
+      const key = `${Date.now()}-${uuidv4()}${extension}`;
       const url = await uploadFileToS3(file, key);
       addedPhotoUrls.push(url);
     }
