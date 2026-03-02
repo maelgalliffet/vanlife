@@ -167,6 +167,8 @@ app.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ ty
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     const photoUrls: string[] = [];
 
+    console.log('[POST /bookings] Files received:', files.length);
+
     for (const file of files) {
       const lastDotIndex = file.originalname.lastIndexOf(".");
       const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
@@ -255,6 +257,8 @@ app.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id: s
     // Upload new photos
     const uploadedFiles = (req.files as Express.Multer.File[] | undefined) ?? [];
     const addedPhotoUrls: string[] = [];
+
+    console.log('[PUT /bookings/:id] Files received:', uploadedFiles.length);
 
     for (const file of uploadedFiles) {
       const lastDotIndex = file.originalname.lastIndexOf(".");
@@ -514,4 +518,14 @@ app.delete("/bookings/:bookingId/comments/:commentId", async (req: Request<{ boo
 });
 
 // Export handler wrapped with serverless-http
-export const handler = serverless(app);
+// Configure binary media types for API Gateway
+export const handler = serverless(app, {
+  binary: ['multipart/form-data', 'image/*', 'application/octet-stream'],
+  request: (request: any, event: any) => {
+    // Force binary mode for multipart requests
+    if (event.headers &&
+      (event.headers['content-type'] || event.headers['Content-Type'] || '').includes('multipart/form-data')) {
+      request.body = event.isBase64Encoded ? Buffer.from(event.body, 'base64') : event.body;
+    }
+  }
+});

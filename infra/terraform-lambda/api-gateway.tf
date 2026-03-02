@@ -6,6 +6,12 @@ resource "aws_api_gateway_rest_api" "api" {
   endpoint_configuration {
     types = ["REGIONAL"]
   }
+
+  binary_media_types = [
+    "multipart/form-data",
+    "image/*",
+    "application/octet-stream"
+  ]
 }
 
 # API Gateway Deployment

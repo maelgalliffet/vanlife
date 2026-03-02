@@ -84,19 +84,51 @@ export async function uploadFileToS3(
   file: Express.Multer.File,
   key: string
 ): Promise<string> {
+  // Debug logging
+  const buffer: any = file.buffer;
+  console.log('[UPLOAD DEBUG] File info:', {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    bufferType: typeof buffer,
+    bufferIsBuffer: Buffer.isBuffer(buffer),
+    bufferLength: buffer?.length || 0,
+    // First 100 chars to see if it's base64 string
+    bufferPreview: typeof buffer === 'string' ? (buffer as string).substring(0, 100) : 'Buffer'
+  });
+
+  // Ensure Body is a Buffer (not a string)
+  let body: Buffer;
+  if (typeof buffer === 'string') {
+    // If buffer is a string (base64), convert it back to Buffer
+    console.log('[UPLOAD DEBUG] Converting string to Buffer (assuming base64)');
+    body = Buffer.from(buffer, 'base64');
+  } else if (Buffer.isBuffer(buffer)) {
+    console.log('[UPLOAD DEBUG] Buffer is already a Buffer');
+    body = buffer;
+  } else {
+    // Fallback: convert to buffer if it's something else
+    console.log('[UPLOAD DEBUG] Converting unknown type to Buffer');
+    body = Buffer.from(buffer);
+  }
+
+  console.log('[UPLOAD DEBUG] Final body size:', body.length);
+
   const upload = new Upload({
     client: s3Client,
     params: {
       Bucket: UPLOADS_BUCKET,
       Key: key,
-      Body: file.buffer,
+      Body: body,
       ContentType: file.mimetype,
       CacheControl: "max-age=31536000", // 1 year for immutable uploads
     },
   });
 
   await upload.done();
-  return `https://${UPLOADS_BUCKET}.s3.${process.env.AWS_REGION || "eu-west-3"}.amazonaws.com/${key}`;
+  const url = `https://${UPLOADS_BUCKET}.s3.${process.env.AWS_REGION || "eu-west-3"}.amazonaws.com/${key}`;
+  console.log('[UPLOAD DEBUG] Upload completed:', url);
+  return url;
 }
 
 // Delete file from S3
