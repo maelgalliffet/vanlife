@@ -90,7 +90,7 @@ apps/
     │   └── types.ts  # Types TypeScript
     └── package.json
 
-infra/terraform-lambda/
+terraform/
 ├── main.tf           # S3, IAM, CloudWatch
 ├── lambda.tf         # Configuration Lambda
 ├── api-gateway.tf    # REST API

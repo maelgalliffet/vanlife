@@ -23,7 +23,7 @@ warn() {
 }
 
 SSH_HOST="${1:-aws-instance}"
-TERRAFORM_DIR="infra/terraform-lambda"
+TERRAFORM_DIR="terraform"
 
 log "📦 Migration des données EC2 → Lambda/S3"
 echo ""

@@ -3,6 +3,15 @@ resource "aws_api_gateway_rest_api" "api" {
   name        = "${var.project_name}-api-${var.environment}"
   description = "Vanlife Weekend Booking API"
 
+  binary_media_types = [
+    "multipart/form-data",
+    "application/octet-stream",
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif"
+  ]
+
   endpoint_configuration {
     types = ["REGIONAL"]
   }
@@ -15,6 +24,7 @@ resource "aws_api_gateway_deployment" "api" {
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_integration.api_proxy.id,
+      aws_api_gateway_rest_api.api.binary_media_types,
     ]))
   }
 

@@ -11,9 +11,8 @@ const getApiUrl = () => {
   if (import.meta.env.DEV) {
     return "http://localhost:4000";
   }
-  // En production, utiliser l'URL définie à la build time (VITE_API_URL)
-  // Par défaut: API Gateway Lambda
-  return import.meta.env.VITE_API_URL || "https://l9tfi28yik.execute-api.eu-west-3.amazonaws.com/prod";
+  // En production, utiliser CloudFront /prod/api proxy (même domaine = pas de CORS)
+  return import.meta.env.VITE_API_URL || "/prod/api";
 };
 
 const API_URL = getApiUrl();
