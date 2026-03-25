@@ -18,6 +18,77 @@ const getApiUrl = () => {
 const API_URL = getApiUrl();
 const STORAGE_KEY = "vanlife-current-user-id";
 const IS_DEV = import.meta.env.DEV;
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+function renameFileToJpeg(name: string): string {
+  const lastDot = name.lastIndexOf(".");
+  const base = lastDot > -1 ? name.slice(0, lastDot) : name;
+  return `${base}.jpg`;
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Impossible de compresser l'image"));
+        return;
+      }
+      resolve(blob);
+    }, type, quality);
+  });
+}
+
+async function compressImageForUpload(file: File): Promise<File> {
+  if (file.size <= MAX_UPLOAD_BYTES) {
+    return file;
+  }
+
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    bitmap.close();
+    throw new Error("Canvas non disponible pour compresser l'image");
+  }
+
+  const scales = [1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.33, 0.25];
+  const qualities = [0.9, 0.82, 0.74, 0.66, 0.58, 0.5, 0.42, 0.34, 0.26];
+  let bestBlob: Blob | null = null;
+
+  try {
+    for (const scale of scales) {
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.width = width;
+      canvas.height = height;
+
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(bitmap, 0, 0, width, height);
+
+      for (const quality of qualities) {
+        const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+
+        if (!bestBlob || blob.size < bestBlob.size) {
+          bestBlob = blob;
+        }
+
+        if (blob.size <= MAX_UPLOAD_BYTES) {
+          return new File([blob], renameFileToJpeg(file.name), { type: "image/jpeg" });
+        }
+      }
+    }
+
+    if (bestBlob && bestBlob.size <= MAX_UPLOAD_BYTES) {
+      return new File([bestBlob], renameFileToJpeg(file.name), { type: "image/jpeg" });
+    }
+
+    throw new Error("Impossible de compresser l'image à 10MB maximum");
+  } finally {
+    bitmap.close();
+  }
+}
 
 function toDateKey(input: Date): string {
   const localDate = new Date(Date.UTC(input.getFullYear(), input.getMonth(), input.getDate()));
@@ -127,6 +198,7 @@ export default function App() {
   const [commentError, setCommentError] = useState<string>("");
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [showBookingPopup, setShowBookingPopup] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   useEffect(() => {
     void loadUsers();
@@ -209,18 +281,26 @@ export default function App() {
 
     if (files) {
       for (const file of Array.from(files)) {
-        // Validate file
-        if (!file.type.startsWith('image/')) {
-          setError('un des fichiers n\'est pas une image');
+        if (!file.type.startsWith("image/")) {
+          setError("Un des fichiers n'est pas une image");
           setIsSubmitting(false);
           return;
         }
+
         if (file.size > 50 * 1024 * 1024) {
-          setError('un des fichiers est trop volumineux (max 50MB)');
+          setError("Un des fichiers est trop volumineux (max 50MB)");
           setIsSubmitting(false);
           return;
         }
-        formData.append("photos", file);
+
+        try {
+          const processedFile = await compressImageForUpload(file);
+          formData.append("photos", processedFile);
+        } catch {
+          setError(`Impossible de compresser ${file.name} sous 10MB`);
+          setIsSubmitting(false);
+          return;
+        }
       }
     }
 
@@ -446,16 +526,26 @@ export default function App() {
 
     if (editNewFiles) {
       for (const file of Array.from(editNewFiles)) {
-        // Validate file
-        if (!file.type.startsWith('image/')) {
-          setEditError('un des fichiers n\'est pas une image');
+        if (!file.type.startsWith("image/")) {
+          setEditError("Un des fichiers n'est pas une image");
+          setIsSavingEdit(false);
           return;
         }
+
         if (file.size > 50 * 1024 * 1024) {
-          setEditError('un des fichiers est trop volumineux (max 50MB)');
+          setEditError("Un des fichiers est trop volumineux (max 50MB)");
+          setIsSavingEdit(false);
           return;
         }
-        formData.append("photos", file);
+
+        try {
+          const processedFile = await compressImageForUpload(file);
+          formData.append("photos", processedFile);
+        } catch {
+          setEditError(`Impossible de compresser ${file.name} sous 10MB`);
+          setIsSavingEdit(false);
+          return;
+        }
       }
     }
 
@@ -855,12 +945,14 @@ export default function App() {
                 <span>{booking.type === "definitive" ? "Définitive" : "Provisoire"}</span>
               </header>
 
-              <p>{booking.note || "Aucune note"}</p>
+              <p className="post-note">{booking.note || "Aucune note"}</p>
 
               {booking.photoUrls.length > 0 && (
                 <div className="post-photos">
                   {booking.photoUrls.map((url) => (
-                    <img key={url} src={url} alt={`Photo ${booking.userName}`} loading="lazy" />
+                    <button key={url} className="post-photo-btn" onClick={() => setLightboxUrl(url)} aria-label="Voir en grand">
+                      <img src={url} alt={`Photo ${booking.userName}`} loading="lazy" />
+                    </button>
                   ))}
                 </div>
               )}
@@ -1134,6 +1226,18 @@ export default function App() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {lightboxUrl && (
+        <div className="lightbox-overlay" onClick={() => setLightboxUrl(null)}>
+          <button className="lightbox-close" onClick={() => setLightboxUrl(null)} aria-label="Fermer">✕</button>
+          <img
+            className="lightbox-img"
+            src={lightboxUrl}
+            alt="Photo en grand"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

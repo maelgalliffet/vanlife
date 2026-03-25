@@ -33,7 +33,7 @@ trap cleanup EXIT INT TERM
 free_port 4000
 free_port 5173
 
-npm run dev -w apps/api &
+npm run dev -w apps/api-lambda &
 API_PID=$!
 
 npm run dev -w apps/web -- --host 0.0.0.0 &

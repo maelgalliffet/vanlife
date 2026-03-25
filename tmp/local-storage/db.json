@@ -1,0 +1,189 @@
+{
+  "users": [
+    {
+      "id": "mael",
+      "name": "Maël/Salma"
+    },
+    {
+      "id": "ivan",
+      "name": "Ivan/Isa"
+    },
+    {
+      "id": "lena",
+      "name": "Lena/Lucas"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "bkg-20260110-mael-def",
+      "weekendKey": "2026-01-10",
+      "startDate": "2026-01-10",
+      "endDate": "2026-01-12",
+      "dateKeys": [
+        "2026-01-10",
+        "2026-01-11",
+        "2026-01-12"
+      ],
+      "userId": "mael",
+      "userName": "Maël/Salma",
+      "type": "definitive",
+      "note": "Sortie ski en famille (Chamrousse).",
+      "photoUrls": [
+        "http://localhost:4000/uploads/ski-chamrousse.jpg"
+      ],
+      "createdAt": "2025-12-18T09:12:00.000Z",
+      "reactions": {
+        "ivan": "⛷️",
+        "lena": "❄️"
+      },
+      "comments": [
+        {
+          "id": "cmt-bkg-20260110-1",
+          "userId": "ivan",
+          "userName": "Ivan/Isa",
+          "text": "Pensez aux chaînes, la météo annonce de la neige.",
+          "createdAt": "2025-12-19T11:04:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "bkg-20260214-ivan-prov",
+      "weekendKey": "2026-02-14",
+      "startDate": "2026-02-14",
+      "endDate": "2026-02-16",
+      "dateKeys": [
+        "2026-02-14",
+        "2026-02-15",
+        "2026-02-16"
+      ],
+      "userId": "ivan",
+      "userName": "Ivan/Isa",
+      "type": "provisional",
+      "note": "Option Saint-Malo selon la météo.",
+      "photoUrls": [
+        "http://localhost:4000/uploads/saint-malo.jpg"
+      ],
+      "createdAt": "2026-01-05T16:20:00.000Z",
+      "reactions": {
+        "mael": "🌊"
+      },
+      "comments": []
+    },
+    {
+      "id": "bkg-20260329-lena-prov",
+      "weekendKey": "2026-03-29",
+      "startDate": "2026-03-29",
+      "endDate": "2026-03-29",
+      "dateKeys": [
+        "2026-03-29"
+      ],
+      "userId": "lena",
+      "userName": "Lena/Lucas",
+      "type": "provisional",
+      "note": "Journée test van + ménage intérieur.",
+      "photoUrls": [
+        "http://localhost:4000/uploads/van-menage.jpg"
+      ],
+      "createdAt": "2026-03-21T08:45:00.000Z",
+      "reactions": {
+        "mael": "🧽",
+        "ivan": "👍"
+      },
+      "comments": [
+        {
+          "id": "cmt-bkg-20260329-1",
+          "userId": "mael",
+          "userName": "Maël/Salma",
+          "text": "Je laisse les produits d'entretien dans le coffre.",
+          "createdAt": "2026-03-22T10:12:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "bkg-20260403-lena-def",
+      "weekendKey": "2026-04-03",
+      "startDate": "2026-04-03",
+      "endDate": "2026-04-05",
+      "dateKeys": [
+        "2026-04-03",
+        "2026-04-04",
+        "2026-04-05"
+      ],
+      "userId": "lena",
+      "userName": "Lena/Lucas",
+      "type": "definitive",
+      "note": "Week-end surf côte basque. Départ vendredi 18h.",
+      "photoUrls": [
+        "http://localhost:4000/uploads/surf-basque.jpg"
+      ],
+      "createdAt": "2026-03-10T14:30:00.000Z",
+      "reactions": {
+        "ivan": "🏄",
+        "mael": "🔥"
+      },
+      "comments": []
+    },
+    {
+      "id": "bkg-20260508-mael-prov",
+      "weekendKey": "2026-05-08",
+      "startDate": "2026-05-08",
+      "endDate": "2026-05-10",
+      "dateKeys": [
+        "2026-05-08",
+        "2026-05-09",
+        "2026-05-10"
+      ],
+      "userId": "mael",
+      "userName": "Maël/Salma",
+      "type": "provisional",
+      "note": "Rando dans le Vercors, à confirmer selon dispo.",
+      "photoUrls": [
+        "http://localhost:4000/uploads/vercors-rando.jpg",
+        "http://localhost:4000/uploads/1774464132544-93dbe8cf-0c75-43a3-8fe2-d08e7f512d42.jpg"
+      ],
+      "createdAt": "2026-03-23T12:00:00.000Z",
+      "reactions": {
+        "lena": "🥾"
+      },
+      "comments": []
+    },
+    {
+      "id": "bkg-20260718-ivan-def",
+      "weekendKey": "2026-07-18",
+      "startDate": "2026-07-18",
+      "endDate": "2026-07-26",
+      "dateKeys": [
+        "2026-07-18",
+        "2026-07-19",
+        "2026-07-20",
+        "2026-07-21",
+        "2026-07-22",
+        "2026-07-23",
+        "2026-07-24",
+        "2026-07-25",
+        "2026-07-26"
+      ],
+      "userId": "ivan",
+      "userName": "Ivan/Isa",
+      "type": "definitive",
+      "note": "Vacances été - Tour Bretagne nord.",
+      "photoUrls": [
+        "http://localhost:4000/uploads/bretagne-tour.jpg"
+      ],
+      "createdAt": "2026-02-02T09:00:00.000Z",
+      "reactions": {
+        "mael": "🚐",
+        "lena": "🌞"
+      },
+      "comments": [
+        {
+          "id": "cmt-bkg-20260718-1",
+          "userId": "lena",
+          "userName": "Lena/Lucas",
+          "text": "Top, pensez à prendre le barbecue pliant.",
+          "createdAt": "2026-02-03T19:25:00.000Z"
+        }
+      ]
+    }
+  ]
+}
