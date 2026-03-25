@@ -1,6 +1,7 @@
 process.env.LOCAL_DEV = process.env.LOCAL_DEV ?? "true";
+export { };
 
-import app from "./index.js";
+const { default: app } = await import("./index.js");
 
 const port = Number(process.env.PORT ?? 4000);
 

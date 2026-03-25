@@ -91,13 +91,6 @@ async function compressImageIfNeeded(body: Buffer, mimeType: string): Promise<Bu
       }
 
       if (candidate.length <= MAX_IMAGE_SIZE_BYTES) {
-        console.log("[UPLOAD DEBUG] Image compressed successfully:", {
-          originalBytes: body.length,
-          compressedBytes: candidate.length,
-          mimeType,
-          maxWidth: targetWidth,
-          quality,
-        });
         return candidate;
       }
     }
@@ -113,6 +106,22 @@ export interface User {
   name: string;
 }
 
+export interface PushSubscriptionRecord {
+  id: string;
+  userId: string;
+  endpoint: string;
+  subscription: {
+    endpoint: string;
+    expirationTime?: number | null;
+    keys: {
+      p256dh: string;
+      auth: string;
+    };
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Booking {
   id: string;
   weekendKey: string;
@@ -122,6 +131,7 @@ export interface Booking {
   userId: string;
   userName: string;
   type: "tentative" | "definitive" | "provisional";
+  title?: string;
   note: string;
   photoUrls: string[];
   createdAt: string;
@@ -134,11 +144,37 @@ export interface Booking {
     createdAt: string;
     updatedAt?: string;
   }>;
+  publishedNotificationSentAt?: string;
 }
 
 export interface Database {
   users: User[];
   bookings: Booking[];
+  pushSubscriptions: PushSubscriptionRecord[];
+}
+
+function getDefaultBookingTitle(startDate: string, endDate: string): string {
+  return `${startDate} -> ${endDate}`;
+}
+
+export function normalizeBooking(booking: Booking): Booking {
+  const normalizedType = booking.type === "tentative" ? "provisional" : booking.type;
+  const normalizedTitle = booking.title?.trim() || getDefaultBookingTitle(booking.startDate, booking.endDate);
+  return {
+    ...booking,
+    type: normalizedType,
+    title: normalizedTitle,
+    reactions: booking.reactions ?? {},
+    comments: booking.comments ?? []
+  };
+}
+
+function normalizeDb(db: Database): Database {
+  return {
+    ...db,
+    bookings: (db.bookings ?? []).map(normalizeBooking),
+    pushSubscriptions: db.pushSubscriptions ?? []
+  };
 }
 
 // Read database from S3
@@ -155,13 +191,14 @@ export async function readDb(): Promise<Database> {
           { id: "lena", name: "Lena/Lucas" },
         ],
         bookings: [],
+        pushSubscriptions: [],
       };
       await writeDb(defaultDb);
       return defaultDb;
     }
 
     const dbRaw = await readFile(LOCAL_DB_PATH, "utf-8");
-    return JSON.parse(dbRaw) as Database;
+    return normalizeDb(JSON.parse(dbRaw) as Database);
   }
 
   try {
@@ -171,7 +208,7 @@ export async function readDb(): Promise<Database> {
     });
     const response = await s3Client.send(command);
     const body = await response.Body!.transformToString();
-    return JSON.parse(body);
+    return normalizeDb(JSON.parse(body));
   } catch (error: any) {
     if (error.name === "NoSuchKey") {
       // Initialize with default data
@@ -182,6 +219,7 @@ export async function readDb(): Promise<Database> {
           { id: "lena", name: "Lena/Lucas" },
         ],
         bookings: [],
+        pushSubscriptions: [],
       };
       await writeDb(defaultDb);
       return defaultDb;
@@ -212,41 +250,25 @@ export async function uploadFileToS3(
   file: Express.Multer.File,
   key: string
 ): Promise<string> {
-  // Debug logging
-  const buffer: any = file.buffer;
-  console.log('[UPLOAD DEBUG] File info:', {
-    originalname: file.originalname,
-    mimetype: file.mimetype,
-    size: file.size,
-    bufferType: typeof buffer,
-    bufferIsBuffer: Buffer.isBuffer(buffer),
-    bufferLength: buffer?.length || 0,
-  });
+  const buffer = file.buffer;
 
   // Ensure Body is a Buffer
   // NOTE: Multer with memoryStorage should ALWAYS provide a Buffer, not a string
   // Do NOT attempt to decode base64 strings - this corrupts binary data
   let body: Buffer;
   if (Buffer.isBuffer(buffer)) {
-    console.log('[UPLOAD DEBUG] Buffer is a Buffer (OK)');
     body = buffer;
   } else if (typeof buffer === 'string') {
     // This should not happen with multer memoryStorage
     // If it does, the data is already corrupted upstream
-    console.warn('[UPLOAD WARNING] Buffer is string (unexpected), converting with UTF-8 encoding');
     body = Buffer.from(buffer, 'utf-8');
   } else {
-    console.error('[UPLOAD ERROR] Unexpected buffer type:', typeof buffer);
     body = Buffer.from(String(buffer));
   }
-
-  console.log('[UPLOAD DEBUG] Final body size:', body.length);
-  console.log('[UPLOAD DEBUG] Uploading to bucket:', UPLOADS_BUCKET, 'with key:', key);
 
   try {
     // Detect the correct MIME type from file extension or use provided mimetype
     const detectedMimeType = getMimeType(key) || file.mimetype || 'application/octet-stream';
-    console.log('[UPLOAD DEBUG] Detected MIME type:', detectedMimeType, '(from key:', key, ')');
 
     const processedBody = await compressImageIfNeeded(body, detectedMimeType);
 
@@ -272,18 +294,15 @@ export async function uploadFileToS3(
       CacheControl: "max-age=31536000",
     });
 
-    const result = await s3Client.send(command);
+    await s3Client.send(command);
     // Use CloudFront custom domain if available, otherwise fallback to direct S3 URL
     // Note: key already includes the path prefix (e.g., "uploads/filename.jpg")
     const url = CLOUDFRONT_CUSTOM_DOMAIN
       ? `https://${CLOUDFRONT_CUSTOM_DOMAIN}/${key}`
       : `https://${CLOUDFRONT_DOMAIN}/${key}`;
-    console.log('[UPLOAD DEBUG] Upload completed successfully:', url);
-    console.log('[UPLOAD DEBUG] Upload ETag:', result.ETag);
     return url;
   } catch (error) {
     console.error('[UPLOAD ERROR] Failed to upload file:', error);
-    console.error('[UPLOAD ERROR] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     throw error;
   }
 }

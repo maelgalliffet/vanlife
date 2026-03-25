@@ -131,7 +131,7 @@ export function registerBookingInteractionRoutes(router: Router, deps: RegisterB
         const recipients = uniqueUserIds([normalized.userId, ...priorCommenterIds]).filter((id) => id !== userId);
         await notifyUsers(db, recipients, {
           title: "💬 Nouveau commentaire",
-          body: `${user.name} a commenté la publication ${normalized.startDate}${normalized.startDate === normalized.endDate ? "" : ` → ${normalized.endDate}`}`,
+          body: `${user.name} a commenté votre réservation : ${normalized.title}`,
           url: "/",
           tag: `publication-comment-${normalized.id}`
         });

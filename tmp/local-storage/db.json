@@ -15,175 +15,228 @@
   ],
   "bookings": [
     {
-      "id": "bkg-20260110-mael-def",
-      "weekendKey": "2026-01-10",
-      "startDate": "2026-01-10",
-      "endDate": "2026-01-12",
+      "id": "seed-mael-ski",
+      "weekendKey": "2026-01-09",
+      "startDate": "2026-01-09",
+      "endDate": "2026-01-11",
       "dateKeys": [
+        "2026-01-09",
         "2026-01-10",
-        "2026-01-11",
-        "2026-01-12"
+        "2026-01-11"
       ],
       "userId": "mael",
       "userName": "Maël/Salma",
       "type": "definitive",
       "note": "Sortie ski en famille (Chamrousse).",
       "photoUrls": [
-        "http://localhost:4000/uploads/ski-chamrousse.jpg"
+        "http://localhost:4000/uploads/1774477396198-26eb47d7-a7c7-4f17-be40-d234ab31a4ff.jpg"
       ],
-      "createdAt": "2025-12-18T09:12:00.000Z",
+      "createdAt": "2026-01-04T10:00:00.000Z",
       "reactions": {
         "ivan": "⛷️",
         "lena": "❄️"
       },
       "comments": [
         {
-          "id": "cmt-bkg-20260110-1",
+          "id": "seed-cmt1",
           "userId": "ivan",
           "userName": "Ivan/Isa",
           "text": "Pensez aux chaînes, la météo annonce de la neige.",
-          "createdAt": "2025-12-19T11:04:00.000Z"
+          "createdAt": "2026-01-05T11:04:00.000Z"
         }
-      ]
+      ],
+      "publishedNotificationSentAt": "2026-01-11T09:00:00.000Z",
+      "title": "2026-01-09 -> 2026-01-11"
     },
     {
-      "id": "bkg-20260214-ivan-prov",
-      "weekendKey": "2026-02-14",
-      "startDate": "2026-02-14",
-      "endDate": "2026-02-16",
+      "id": "seed-ivan-plage",
+      "weekendKey": "2026-02-08",
+      "startDate": "2026-02-08",
+      "endDate": "2026-02-11",
       "dateKeys": [
-        "2026-02-14",
-        "2026-02-15",
-        "2026-02-16"
+        "2026-02-08",
+        "2026-02-09",
+        "2026-02-10",
+        "2026-02-11"
       ],
       "userId": "ivan",
       "userName": "Ivan/Isa",
-      "type": "provisional",
-      "note": "Option Saint-Malo selon la météo.",
-      "photoUrls": [
-        "http://localhost:4000/uploads/saint-malo.jpg"
-      ],
-      "createdAt": "2026-01-05T16:20:00.000Z",
+      "type": "definitive",
+      "note": "Week-end plage à Arcachon. Retour lundi.",
+      "photoUrls": [],
+      "createdAt": "2026-02-03T10:00:00.000Z",
       "reactions": {
-        "mael": "🌊"
-      },
-      "comments": []
-    },
-    {
-      "id": "bkg-20260329-lena-prov",
-      "weekendKey": "2026-03-29",
-      "startDate": "2026-03-29",
-      "endDate": "2026-03-29",
-      "dateKeys": [
-        "2026-03-29"
-      ],
-      "userId": "lena",
-      "userName": "Lena/Lucas",
-      "type": "provisional",
-      "note": "Journée test van + ménage intérieur.",
-      "photoUrls": [
-        "http://localhost:4000/uploads/van-menage.jpg"
-      ],
-      "createdAt": "2026-03-21T08:45:00.000Z",
-      "reactions": {
-        "mael": "🧽",
-        "ivan": "👍"
+        "mael": "🌊",
+        "lena": "🏖️"
       },
       "comments": [
         {
-          "id": "cmt-bkg-20260329-1",
-          "userId": "mael",
-          "userName": "Maël/Salma",
-          "text": "Je laisse les produits d'entretien dans le coffre.",
-          "createdAt": "2026-03-22T10:12:00.000Z"
+          "id": "seed-cmt2",
+          "userId": "lena",
+          "userName": "Lena/Lucas",
+          "text": "Les enfants adorent les dunes !",
+          "createdAt": "2026-02-04T18:30:00.000Z"
         }
-      ]
+      ],
+      "publishedNotificationSentAt": "2026-02-11T09:00:00.000Z",
+      "title": "2026-02-08 -> 2026-02-11"
     },
     {
-      "id": "bkg-20260403-lena-def",
-      "weekendKey": "2026-04-03",
-      "startDate": "2026-04-03",
-      "endDate": "2026-04-05",
+      "id": "seed-lena-vercors",
+      "weekendKey": "2026-03-05",
+      "startDate": "2026-03-05",
+      "endDate": "2026-03-06",
       "dateKeys": [
-        "2026-04-03",
-        "2026-04-04",
-        "2026-04-05"
+        "2026-03-05",
+        "2026-03-06"
+      ],
+      "userId": "lena",
+      "userName": "Lena/Lucas",
+      "type": "definitive",
+      "note": "Rando dans le Vercors, nuit au refuge.",
+      "photoUrls": [],
+      "createdAt": "2026-02-28T10:00:00.000Z",
+      "reactions": {
+        "mael": "🥾",
+        "ivan": "🏔️"
+      },
+      "comments": [],
+      "publishedNotificationSentAt": "2026-03-06T09:00:00.000Z",
+      "title": "2026-03-05 -> 2026-03-06"
+    },
+    {
+      "id": "seed-mael-courses",
+      "weekendKey": "2026-04-06",
+      "startDate": "2026-04-06",
+      "endDate": "2026-04-06",
+      "dateKeys": [
+        "2026-04-06"
+      ],
+      "userId": "mael",
+      "userName": "Maël/Salma",
+      "type": "provisional",
+      "note": "Journée van pour courses + nettoyage.",
+      "photoUrls": [],
+      "createdAt": "2026-04-02T10:00:00.000Z",
+      "reactions": {
+        "lena": "🧹"
+      },
+      "comments": [],
+      "title": "2026-04-06 -> 2026-04-06"
+    },
+    {
+      "id": "seed-lena-surf",
+      "weekendKey": "2026-04-19",
+      "startDate": "2026-04-19",
+      "endDate": "2026-04-21",
+      "dateKeys": [
+        "2026-04-19",
+        "2026-04-20",
+        "2026-04-21"
       ],
       "userId": "lena",
       "userName": "Lena/Lucas",
       "type": "definitive",
       "note": "Week-end surf côte basque. Départ vendredi 18h.",
-      "photoUrls": [
-        "http://localhost:4000/uploads/surf-basque.jpg"
-      ],
-      "createdAt": "2026-03-10T14:30:00.000Z",
+      "photoUrls": [],
+      "createdAt": "2026-04-12T10:00:00.000Z",
       "reactions": {
         "ivan": "🏄",
         "mael": "🔥"
       },
-      "comments": []
+      "comments": [],
+      "title": "2026-04-19 -> 2026-04-21"
     },
     {
-      "id": "bkg-20260508-mael-prov",
-      "weekendKey": "2026-05-08",
-      "startDate": "2026-05-08",
-      "endDate": "2026-05-10",
+      "id": "seed-ivan-roadtrip",
+      "weekendKey": "2026-05-09",
+      "startDate": "2026-05-09",
+      "endDate": "2026-05-11",
       "dateKeys": [
-        "2026-05-08",
         "2026-05-09",
-        "2026-05-10"
+        "2026-05-10",
+        "2026-05-11"
       ],
-      "userId": "mael",
-      "userName": "Maël/Salma",
+      "userId": "ivan",
+      "userName": "Ivan/Isa",
       "type": "provisional",
-      "note": "Rando dans le Vercors, à confirmer selon dispo.",
-      "photoUrls": [
-        "http://localhost:4000/uploads/vercors-rando.jpg",
-        "http://localhost:4000/uploads/1774464132544-93dbe8cf-0c75-43a3-8fe2-d08e7f512d42.jpg"
-      ],
-      "createdAt": "2026-03-23T12:00:00.000Z",
+      "note": "Road trip Provence, à confirmer selon dispo.",
+      "photoUrls": [],
+      "createdAt": "2026-04-29T10:00:00.000Z",
       "reactions": {
-        "lena": "🥾"
+        "mael": "🌿"
       },
-      "comments": []
+      "comments": [],
+      "title": "2026-05-09 -> 2026-05-11"
     },
     {
-      "id": "bkg-20260718-ivan-def",
-      "weekendKey": "2026-07-18",
-      "startDate": "2026-07-18",
-      "endDate": "2026-07-26",
+      "id": "seed-ivan-vacances",
+      "weekendKey": "2026-06-18",
+      "startDate": "2026-06-18",
+      "endDate": "2026-06-26",
       "dateKeys": [
-        "2026-07-18",
-        "2026-07-19",
-        "2026-07-20",
-        "2026-07-21",
-        "2026-07-22",
-        "2026-07-23",
-        "2026-07-24",
-        "2026-07-25",
-        "2026-07-26"
+        "2026-06-18",
+        "2026-06-19",
+        "2026-06-20",
+        "2026-06-21",
+        "2026-06-22",
+        "2026-06-23",
+        "2026-06-24",
+        "2026-06-25",
+        "2026-06-26"
       ],
       "userId": "ivan",
       "userName": "Ivan/Isa",
       "type": "definitive",
-      "note": "Vacances été - Tour Bretagne nord.",
-      "photoUrls": [
-        "http://localhost:4000/uploads/bretagne-tour.jpg"
-      ],
-      "createdAt": "2026-02-02T09:00:00.000Z",
+      "note": "Vacances été – Tour Bretagne nord.",
+      "photoUrls": [],
+      "createdAt": "2026-05-24T10:00:00.000Z",
       "reactions": {
         "mael": "🚐",
         "lena": "🌞"
       },
       "comments": [
         {
-          "id": "cmt-bkg-20260718-1",
+          "id": "seed-cmt3",
           "userId": "lena",
           "userName": "Lena/Lucas",
           "text": "Top, pensez à prendre le barbecue pliant.",
-          "createdAt": "2026-02-03T19:25:00.000Z"
+          "createdAt": "2026-01-25T19:25:00.000Z"
         }
-      ]
+      ],
+      "title": "2026-06-18 -> 2026-06-26"
+    }
+  ],
+  "pushSubscriptions": [
+    {
+      "id": "db323b5e-460f-490b-9387-ca89149b3841",
+      "userId": "mael",
+      "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAADnLyoOUizEHRqmm7ErTy1XUe8M3umDtZlQc4TA6%2bBmuztsPWAP1Nf7YJ2dsIA3KdYUKOJ63jSQ1Vh51F4DTDARRYhdaaBEp9x4TtSeqv68WScQ7HQJyjftH%2fFtsc1WBVbUkQnDyBjAsCV6rdGLhj2hDapNWs0bWm098rdqZXht3y5J%2f2TcKdRwdeNc7H1TxVziiiIlf%2b1%2bwYqz%2baCMH9lPEB7f8zUSPxLVGOtB21h7KD%2bu%2bYuhsqrgMHQxx9GmDq3clXtGUF6CR%2fJPpxX1W1lhH9yf89BqPCfoYSSBcdb7nDHqe1zMfQjWRClPt8u6kFXUxjTyRAUU4MpgXgx6SrYF",
+      "subscription": {
+        "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAADnLyoOUizEHRqmm7ErTy1XUe8M3umDtZlQc4TA6%2bBmuztsPWAP1Nf7YJ2dsIA3KdYUKOJ63jSQ1Vh51F4DTDARRYhdaaBEp9x4TtSeqv68WScQ7HQJyjftH%2fFtsc1WBVbUkQnDyBjAsCV6rdGLhj2hDapNWs0bWm098rdqZXht3y5J%2f2TcKdRwdeNc7H1TxVziiiIlf%2b1%2bwYqz%2baCMH9lPEB7f8zUSPxLVGOtB21h7KD%2bu%2bYuhsqrgMHQxx9GmDq3clXtGUF6CR%2fJPpxX1W1lhH9yf89BqPCfoYSSBcdb7nDHqe1zMfQjWRClPt8u6kFXUxjTyRAUU4MpgXgx6SrYF",
+        "expirationTime": null,
+        "keys": {
+          "p256dh": "BCbZ2rUVWui_aNIuizMhcq6hMJiV7EA0bqyaN0EuHUW_FSTorPJN1CVPMK192u5GsjnIfVqPfkoSWvLy5I3YyU0",
+          "auth": "yYJLd-7Xs_f8sttz0nNScQ"
+        }
+      },
+      "createdAt": "2026-03-25T21:39:17.508Z",
+      "updatedAt": "2026-03-25T21:39:17.508Z"
+    },
+    {
+      "id": "44279103-77f3-48fd-acef-b031b27e9222",
+      "userId": "ivan",
+      "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAADnLyoOUizEHRqmm7ErTy1XUe8M3umDtZlQc4TA6%2bBmuztsPWAP1Nf7YJ2dsIA3KdYUKOJ63jSQ1Vh51F4DTDARRYhdaaBEp9x4TtSeqv68WScQ7HQJyjftH%2fFtsc1WBVbUkQnDyBjAsCV6rdGLhj2hDapNWs0bWm098rdqZXht3y5J%2f2TcKdRwdeNc7H1TxVziiiIlf%2b1%2bwYqz%2baCMH9lPEB7f8zUSPxLVGOtB21h7KD%2bu%2bYuhsqrgMHQxx9GmDq3clXtGUF6CR%2fJPpxX1W1lhH9yf89BqPCfoYSSBcdb7nDHqe1zMfQjWRClPt8u6kFXUxjTyRAUU4MpgXgx6SrYF",
+      "subscription": {
+        "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAADnLyoOUizEHRqmm7ErTy1XUe8M3umDtZlQc4TA6%2bBmuztsPWAP1Nf7YJ2dsIA3KdYUKOJ63jSQ1Vh51F4DTDARRYhdaaBEp9x4TtSeqv68WScQ7HQJyjftH%2fFtsc1WBVbUkQnDyBjAsCV6rdGLhj2hDapNWs0bWm098rdqZXht3y5J%2f2TcKdRwdeNc7H1TxVziiiIlf%2b1%2bwYqz%2baCMH9lPEB7f8zUSPxLVGOtB21h7KD%2bu%2bYuhsqrgMHQxx9GmDq3clXtGUF6CR%2fJPpxX1W1lhH9yf89BqPCfoYSSBcdb7nDHqe1zMfQjWRClPt8u6kFXUxjTyRAUU4MpgXgx6SrYF",
+        "expirationTime": null,
+        "keys": {
+          "p256dh": "BCbZ2rUVWui_aNIuizMhcq6hMJiV7EA0bqyaN0EuHUW_FSTorPJN1CVPMK192u5GsjnIfVqPfkoSWvLy5I3YyU0",
+          "auth": "yYJLd-7Xs_f8sttz0nNScQ"
+        }
+      },
+      "createdAt": "2026-03-25T22:22:47.996Z",
+      "updatedAt": "2026-03-25T22:22:47.996Z"
     }
   ]
 }

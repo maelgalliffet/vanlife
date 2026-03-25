@@ -59,6 +59,9 @@ aws s3 sync apps/web/dist s3://vanlife-frontend-prod --delete
 
 # Migrer les données depuis l'ancienne EC2
 npm run migrate:lambda
+
+# Migrer la base distante pour ajouter les titles manquants
+npm run migrate:remote-titles
 ```
 
 ### Déploiement automatique
