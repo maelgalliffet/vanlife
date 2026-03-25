@@ -3,7 +3,16 @@ import express, { Request, Router } from "express";
 import cors from "cors";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
-import { readDb, writeDb, uploadFileToS3, deleteFileFromS3, Booking } from "./s3-db.js";
+import {
+  readDb,
+  writeDb,
+  uploadFileToS3,
+  deleteFileFromS3,
+  Booking,
+  UploadTooLargeError,
+  isLocalStorage,
+  LOCAL_UPLOADS_DIR
+} from "./s3-db.js";
 
 const app = express();
 const router = Router();
@@ -14,6 +23,12 @@ const upload = multer({
 });
 
 app.use(cors({ origin: "*" }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+if (isLocalStorage && LOCAL_UPLOADS_DIR) {
+  app.use("/uploads", express.static(LOCAL_UPLOADS_DIR));
+}
 
 // Helper functions
 function getDateKeysBetween(startDateStr: string, endDateStr: string): string[] {
@@ -190,6 +205,9 @@ router.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{
 
     return res.status(201).json(booking);
   } catch (error) {
+    if (error instanceof UploadTooLargeError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     console.error("Error creating booking:", error);
     return res.status(500).json({ message: "Error creating booking" });
   }
@@ -276,6 +294,9 @@ router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id
 
     return res.json(updatedBooking);
   } catch (error) {
+    if (error instanceof UploadTooLargeError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     console.error("Error updating booking:", error);
     return res.status(500).json({ message: "Error updating booking" });
   }
@@ -419,7 +440,7 @@ router.post("/bookings/:id/comments", async (req: Request<{ id: string }>, res) 
 });
 
 // Modify comment
-app.patch("/bookings/:bookingId/comments/:commentId", async (req: Request<{ bookingId: string; commentId: string }>, res) => {
+router.patch("/bookings/:bookingId/comments/:commentId", async (req: Request<{ bookingId: string; commentId: string }>, res) => {
   try {
     const { bookingId, commentId } = req.params;
     const { userId, text } = req.body as { userId?: string; text?: string };
@@ -507,7 +528,8 @@ router.delete("/bookings/:bookingId/comments/:commentId", async (req: Request<{ 
   }
 });
 
-// Mount router on /api path (CloudFront forwards /api/*, Lambda sees /api/*)
+// Local mode uses root paths, production mode is proxied through /api.
+app.use(router);
 app.use('/api', router);
 
 // Export handler wrapped with serverless-http
@@ -518,3 +540,5 @@ app.use('/api', router);
 export const handler = serverless(app, {
   binary: ['multipart/form-data'],
 });
+
+export default app;

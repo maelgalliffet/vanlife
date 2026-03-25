@@ -11,12 +11,12 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #f5e6d3;
+  background-color: #0f172a;
   background-image:
-    linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.75)),
-    url("data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cstyle%3E.van%7Bfill:%23d4a574%7D.window%7Bfill:%236ba3d3%7D.wheel%7Bfill:%23333%7D.detail%7Bstroke:%23333%3Bstroke-width:0.5%7D%3C/style%3E%3C/defs%3E%3Cg opacity='0.15'%3E%3C!-- Van body --%3E%3Crect x='15' y='50' width='70' height='35' rx='2' class='van'/%3E%3C!-- Van cabin --%3E%3Crect x='15' y='40' width='25' height='15' rx='1' class='van'/%3E%3C!-- Main window --%3E%3Crect x='20' y='52' width='18' height='18' rx='1' class='window'/%3E%3C!-- Side windows --%3E%3Crect x='45' y='52' width='12' height='12' rx='1' class='window'/%3E%3Crect x='62' y='52' width='12' height='12' rx='1' class='window'/%3E%3C!-- Windshield --%3E%3Crect x='17' y='42' width='14' height='8' rx='1' class='window'/%3E%3C!-- Front wheel --%3E%3Ccircle cx='25' cy='88' r='5' class='wheel'/%3E%3C!-- Rear wheel --%3E%3Ccircle cx='72' cy='88' r='5' class='wheel'/%3E%3C!-- Bumper --%3E%3Crect x='13' y='86' width='4' height='6' fill='%23555'/%3E%3C/g%3E%3C/svg%3E");
-  background-size: 120px 120px;
-  background-position: 0 0;
+    linear-gradient(rgba(10, 20, 38, 0.55), rgba(10, 20, 38, 0.65)),
+    url("/bg.png");
+  background-size: cover;
+  background-position: center;
   background-attachment: fixed;
 }
 
@@ -331,15 +331,89 @@ button:disabled {
 
 .post-photos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 0.5rem;
+}
+
+.post-photo-btn {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: zoom-in;
+  min-height: 0;
+  line-height: 0;
+}
+
+.post-photo-btn:hover img,
+.post-photo-btn:focus img {
+  opacity: 0.88;
+  transform: scale(1.02);
 }
 
 .post-photos img {
   width: 100%;
-  height: auto;
+  height: 160px;
+  object-fit: cover;
   border-radius: 8px;
   border: 1px solid #d1d5db;
+  display: block;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 1rem;
+}
+
+.lightbox-img {
+  max-width: min(96vw, 1400px);
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  display: block;
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  min-height: 0;
+  z-index: 1201;
+  backdrop-filter: blur(4px);
+}
+
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.28);
+}
+
+.post-note {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.5;
 }
 
 .post-comments {
