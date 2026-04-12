@@ -209,12 +209,17 @@ export default function App() {
   const [isLoadingPushSubscriptions, setIsLoadingPushSubscriptions] = useState(false);
   const [hasLoadedPushSubscriptions, setHasLoadedPushSubscriptions] = useState(false);
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
+  const [bookingPageId, setBookingPageId] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get('booking')
+  );
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
   const [editType, setEditType] = useState<BookingType>("provisional");
   const [editTitle, setEditTitle] = useState("");
   const [editNote, setEditNote] = useState("");
   const [editPhotoUrls, setEditPhotoUrls] = useState<string[]>([]);
+  const [editNewFiles, setEditNewFiles] = useState<FileList | null>(null);
+  const [editNewFilePreviews, setEditNewFilePreviews] = useState<string[]>([]);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const [isDeletingBooking, setIsDeletingBooking] = useState(false);
@@ -241,12 +246,21 @@ export default function App() {
     pushEnabled,
     pushLoading,
     pushError,
-    togglePushSubscription
+    togglePushSubscription,
+    getCurrentPushEndpoint
   } = usePushNotifications(API_URL, currentUserId);
 
   useEffect(() => {
     void loadUsers();
     void refreshData();
+  }, []);
+
+  useEffect(() => {
+    function onPopState() {
+      setBookingPageId(new URLSearchParams(window.location.search).get('booking'));
+    }
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   async function loadUsers() {
@@ -260,7 +274,9 @@ export default function App() {
   async function refreshData() {
     const payload = await fetchBookingsAndPhotos(API_URL);
     setBookings(payload.bookings);
-    setPhotos(payload.photos);
+    setPhotos(
+      payload.photos.slice().sort((a, b) => b.bookingCreatedAt.localeCompare(a.bookingCreatedAt))
+    );
   }
 
   const selectedRange = useMemo(() => {
@@ -594,6 +610,15 @@ export default function App() {
     setActiveBooking(booking);
   }
 
+  function navigateToBooking(id: string) {
+    window.history.pushState({}, '', `?booking=${id}`);
+    setBookingPageId(id);
+  }
+
+  function navigateBackFromBooking() {
+    window.history.back();
+  }
+
   function openLightbox(urls: string[], index: number) {
     setLightboxPhotos(urls);
     setLightboxIndex(index);
@@ -721,18 +746,47 @@ export default function App() {
     }
 
     const removePhotoUrls = activeBooking.photoUrls.filter((url) => !editPhotoUrls.includes(url));
-    const result = await updateBooking(removePhotoUrls);
+    const newPhotoFiles = editNewFiles ? Array.from(editNewFiles) : [];
+    const result = await updateBooking(removePhotoUrls, newPhotoFiles);
     if (result) {
+      setEditNewFiles(null);
+      setEditNewFilePreviews([]);
+      if (editFileInputRef.current) {
+        editFileInputRef.current.value = "";
+      }
       setActiveBooking(null);
     }
   }
 
-  async function handleEditPhotoSelection(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) {
-      return;
+  function closeBookingEditor() {
+    setEditNewFiles(null);
+    setEditNewFilePreviews([]);
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = "";
     }
+    setActiveBooking(null);
+  }
 
-    await updateBooking([], Array.from(fileList), "Impossible d'ajouter les photos");
+  function handleEditPhotoSelection(fileList: FileList | null) {
+    setEditNewFiles(fileList);
+
+    // Generate previews
+    if (fileList) {
+      const previews: string[] = [];
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previews.push(e.target?.result as string);
+          if (previews.length === fileList.length) {
+            setEditNewFilePreviews(previews);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } else {
+      setEditNewFilePreviews([]);
+    }
   }
 
   async function removeExistingPhoto(url: string) {
@@ -802,7 +856,8 @@ export default function App() {
     }
 
     try {
-      await addBookingComment(API_URL, bookingId, currentUserId, draft);
+      const currentEndpoint = await getCurrentPushEndpoint();
+      await addBookingComment(API_URL, bookingId, currentUserId, draft, currentEndpoint ?? undefined);
     } catch {
       return;
     }
@@ -967,6 +1022,11 @@ export default function App() {
     return map;
   }, [bookings]);
 
+  const bookingPage = useMemo(
+    () => (bookingPageId ? (bookings.find((b) => b.id === bookingPageId) ?? null) : null),
+    [bookingPageId, bookings]
+  );
+
   return (
     <div className="page">
       {!currentUserId && (
@@ -1015,259 +1075,300 @@ export default function App() {
         {pushError && <p className="error">{pushError}</p>}
       </header>
 
-      <main className="layout">
-        <section className={`card calendar-card ${collapsedSections.calendar ? "is-collapsed" : ""}`}>
-          <div className="section-header">
-            <h2>Calendrier</h2>
-            <button
-              type="button"
-              className="section-toggle"
-              onClick={() => toggleSection("calendar")}
-              aria-expanded={!collapsedSections.calendar}
-            >
-              {collapsedSections.calendar ? "Déplier" : "Réduire"}
-            </button>
-          </div>
-          {!collapsedSections.calendar && (
-            <>
-              <Calendar
-                locale="fr-FR"
-                showNeighboringMonth
-                showFixedNumberOfWeeks
-                onClickDay={handleDayClick}
-                value={
-                  rangeStart
-                    ? rangeEnd
-                      ? [rangeStart, rangeEnd]
-                      : rangeStart
-                    : null
-                }
-                tileClassName={({ date, view }) => {
-                  if (view !== "month") {
-                    return undefined;
-                  }
-
-                  if (!selectedRange) {
-                    const baseClasses: string[] = [];
-                    const dayOfWeek = date.getDay();
-                    if (dayOfWeek === 0 || dayOfWeek === 6) {
-                      baseClasses.push("weekend-day");
-                    }
-                    if (getFrenchHolidayName(date)) {
-                      baseClasses.push("holiday-day");
-                    }
-                    return baseClasses.length > 0 ? baseClasses.join(" ") : undefined;
-                  }
-
-                  const dayKey = toDateKey(date);
-                  const startKey = toDateKey(selectedRange.start);
-                  const endKey = toDateKey(selectedRange.end);
-                  const classes: string[] = [];
-
-                  const dayOfWeek = date.getDay();
-                  if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    classes.push("weekend-day");
-                  }
-
-                  const holidayName = getFrenchHolidayName(date);
-                  if (holidayName) {
-                    classes.push("holiday-day");
-                  }
-
-                  if (dayKey === startKey && dayKey === endKey) {
-                    classes.push("custom-range-single");
-                  }
-                  if (dayKey === startKey && dayKey !== endKey) {
-                    classes.push("custom-range-start");
-                  }
-                  if (dayKey === endKey && dayKey !== startKey) {
-                    classes.push("custom-range-end");
-                  }
-                  if (dayKey > startKey && dayKey < endKey) {
-                    classes.push("custom-range-middle");
-                  }
-
-                  return classes.length > 0 ? classes.join(" ") : undefined;
-                }}
-                tileContent={({ date }) => {
-                  const key = toDateKey(date);
-                  const dayBookings = bookingsByDate.get(key) ?? [];
-                  const holidayName = getFrenchHolidayName(date);
-
-                  if (dayBookings.length === 0 && !holidayName) {
-                    return null;
-                  }
-
-                  if (dayBookings.length === 0) {
-                    return <div className="tile-indicators holiday-only">{holidayName && <span className="holiday-name">{holidayName}</span>}</div>;
-                  }
-
-                  return (
-                    <div className="tile-indicators">
-                      {holidayName && <span className="holiday-name">{holidayName}</span>}
-                      {dayBookings.slice(0, 2).map((booking) => (
-                        <span
-                          key={`${key}-${booking.id}`}
-                          className={`day-booking-chip ${booking.type} ${userThemeClass(booking.userName)}`}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setActiveBooking(booking);
-                          }}
-                        >
-                          {booking.userName}
-                        </span>
-                      ))}
-                      {dayBookings.length > 2 && <span className="badge provisional">+{dayBookings.length - 2}</span>}
-                    </div>
-                  );
-                }}
-              />
-              <p className="calendar-hint">
-                {!rangeStart && "Sélection: clique une date de début puis une date de fin"}
-                {rangeStart && !rangeEnd && `Début sélectionné: ${toDateKey(rangeStart)} · clique la date de fin`}
-                {rangeStart && rangeEnd && `Dates sélectionnées: ${formatStay(toDateKey(rangeStart), toDateKey(rangeEnd))}`}
-              </p>
-              {rangeStart && (
-                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                  {hasCompleteRange && (
-                    <button type="button" onClick={openBookingCreationPopup}>
-                      Réserver un séjour
-                    </button>
-                  )}
-                  <button type="button" className="secondary-button" onClick={clearSelection}>
-                    Annuler la sélection
+      {bookingPage ? (
+        <main className="booking-page">
+          <button type="button" className="back-button" onClick={navigateBackFromBooking}>
+            ← Retour
+          </button>
+          <article className={`post-card ${userThemeClass(bookingPage.userName)}`}>
+            <header className="post-header">
+              <p className="post-title"><strong>{bookingPage.title}</strong></p>
+            </header>
+            <p className="post-meta">
+              <strong>{bookingPage.userName}</strong> · {formatStay(bookingPage.startDate, bookingPage.endDate)}
+              {' · '}{bookingPage.type === "definitive" ? "Définitive" : "Provisoire"}
+            </p>
+            {bookingPage.note && <p className="post-note">{bookingPage.note}</p>}
+            {bookingPage.photoUrls.length > 0 && (
+              <div className="post-photos">
+                {bookingPage.photoUrls.map((url, i) => (
+                  <button key={url} className="post-photo-btn" onClick={() => openLightbox(bookingPage.photoUrls, i)} aria-label="Voir en grand">
+                    <img src={url} alt={`Photo ${bookingPage.userName}`} loading="lazy" />
                   </button>
-                </div>
-              )}
-            </>
-          )}
-        </section>
-
-        <div className="side-column">
-          {IS_DEV && (
-            <section className={`card dev-tools ${collapsedSections.devTools ? "is-collapsed" : ""}`}>
-              <div className="section-header">
-                <h2>Outils dev</h2>
+                ))}
+              </div>
+            )}
+            {renderComments(bookingPage)}
+            {currentUserId === bookingPage.userId && (
+              <div className="edit-actions">
+                <button type="button" onClick={() => openBookingEditor(bookingPage)}>
+                  Modifier
+                </button>
                 <button
                   type="button"
-                  className="section-toggle"
-                  onClick={() => toggleSection("devTools")}
-                  aria-expanded={!collapsedSections.devTools}
+                  className="danger-button post-delete-btn"
+                  onClick={() => void deleteBookingFromList(bookingPage)}
                 >
-                  {collapsedSections.devTools ? "Déplier" : "Réduire"}
+                  Supprimer cette réservation
                 </button>
               </div>
-              {!collapsedSections.devTools && (
-                <>
-                  <button type="button" className="danger-button" onClick={resetDevData} disabled={isResetting || isSeeding}>
-                    {isResetting ? "Réinitialisation..." : "Vider la base"}
-                  </button>
-                  <button type="button" className="secondary-button" onClick={() => void seedDevData()} disabled={isSeeding || isResetting}>
-                    {isSeeding ? "Peuplement..." : "Peupler la base"}
-                  </button>
-                  <label>
-                    Utilisateur cible (push test)
-                    <select value={devTargetUserId} onChange={(event) => setDevTargetUserId(event.target.value)}>
-                      {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <p className="dev-message">
-                    {!hasLoadedPushSubscriptions && "Statut cible: inconnu (clique "}
-                    {!hasLoadedPushSubscriptions && <strong>"Lister les abonnements push"</strong>}
-                    {!hasLoadedPushSubscriptions && ")"}
-                    {hasLoadedPushSubscriptions &&
-                      targetPushSubscriptionsCount > 0 &&
-                      `Statut cible: ✅ abonné (${targetPushSubscriptionsCount})`}
-                    {hasLoadedPushSubscriptions && targetPushSubscriptionsCount === 0 && "Statut cible: ❌ non abonné"}
-                  </p>
-                  <label>
-                    Titre notification
-                    <input value={devPushTitle} onChange={(event) => setDevPushTitle(event.target.value)} />
-                  </label>
-                  <label>
-                    Message notification
-                    <input value={devPushBody} onChange={(event) => setDevPushBody(event.target.value)} />
-                  </label>
-                  <button type="button" onClick={() => void sendDevPushTest()} disabled={isSendingDevPush || !devTargetUserId}>
-                    {isSendingDevPush ? "Envoi..." : "Envoyer une notif test"}
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => void loadPushSubscriptions()}
-                    disabled={isLoadingPushSubscriptions}
-                  >
-                    {isLoadingPushSubscriptions ? "Chargement..." : "Lister les abonnements push"}
-                  </button>
-                  {pushSubscriptionsView.length > 0 && (
-                    <div>
-                      {pushSubscriptionsView.map((subscription) => (
-                        <p key={subscription.id} className="dev-message">
-                          {subscription.userId} · {subscription.endpoint.slice(0, 60)}...
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  {devMessage && <p className="dev-message">{devMessage}</p>}
-                </>
-              )}
-            </section>
-          )}
-
-          <section className={`card ${collapsedSections.upcomingBookings ? "is-collapsed" : ""}`}>
+            )}
+          </article>
+        </main>
+      ) : (
+        <main className="layout">
+          <section className={`card calendar-card ${collapsedSections.calendar ? "is-collapsed" : ""}`}>
             <div className="section-header">
-              <h2>Réservations à venir <span className="section-count">{upcomingBookings.length}</span></h2>
+              <h2>Calendrier</h2>
               <button
                 type="button"
                 className="section-toggle"
-                onClick={() => toggleSection("upcomingBookings")}
-                aria-expanded={!collapsedSections.upcomingBookings}
-              >
-                {collapsedSections.upcomingBookings ? "Déplier" : "Réduire"}
-              </button>
+                onClick={() => toggleSection("calendar")}
+                aria-expanded={!collapsedSections.calendar}
+                aria-label={collapsedSections.calendar ? "Déplier" : "Réduire"}
+              />
             </div>
-            {!collapsedSections.upcomingBookings && (
+            {!collapsedSections.calendar && (
               <>
-                {upcomingBookings.length === 0 && <p>Aucune réservation à venir.</p>}
-                {upcomingBookings.map((booking) => (
-                  <article key={booking.id} className={`booking ${booking.type} ${userThemeClass(booking.userName)}`}>
-                    <p>
-                      <strong>{booking.title}</strong>
-                    </p>
-                    <p>
-                      <strong>{booking.userName}</strong> · {booking.type === "definitive" ? "Définitive" : "Provisoire"}
-                    </p>
-                    <p>{formatStay(booking.startDate, booking.endDate)}</p>
-                    <p>{booking.note || "Aucune note"}</p>
-                    {currentUserId === booking.userId && (
-                      <div className="edit-actions">
-                        <button type="button" onClick={() => openBookingEditor(booking)}>
-                          Modifier
-                        </button>
-                        <button
-                          type="button"
-                          className="danger-button"
-                          onClick={() => void deleteBookingFromList(booking)}
-                        >
-                          Supprimer cette réservation
-                        </button>
+                <Calendar
+                  locale="fr-FR"
+                  showNeighboringMonth
+                  showFixedNumberOfWeeks
+                  onClickDay={handleDayClick}
+                  value={
+                    rangeStart
+                      ? rangeEnd
+                        ? [rangeStart, rangeEnd]
+                        : rangeStart
+                      : null
+                  }
+                  tileClassName={({ date, view }) => {
+                    if (view !== "month") {
+                      return undefined;
+                    }
+
+                    if (!selectedRange) {
+                      const baseClasses: string[] = [];
+                      const dayOfWeek = date.getDay();
+                      if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        baseClasses.push("weekend-day");
+                      }
+                      if (getFrenchHolidayName(date)) {
+                        baseClasses.push("holiday-day");
+                      }
+                      return baseClasses.length > 0 ? baseClasses.join(" ") : undefined;
+                    }
+
+                    const dayKey = toDateKey(date);
+                    const startKey = toDateKey(selectedRange.start);
+                    const endKey = toDateKey(selectedRange.end);
+                    const classes: string[] = [];
+
+                    const dayOfWeek = date.getDay();
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                      classes.push("weekend-day");
+                    }
+
+                    const holidayName = getFrenchHolidayName(date);
+                    if (holidayName) {
+                      classes.push("holiday-day");
+                    }
+
+                    if (dayKey === startKey && dayKey === endKey) {
+                      classes.push("custom-range-single");
+                    }
+                    if (dayKey === startKey && dayKey !== endKey) {
+                      classes.push("custom-range-start");
+                    }
+                    if (dayKey === endKey && dayKey !== startKey) {
+                      classes.push("custom-range-end");
+                    }
+                    if (dayKey > startKey && dayKey < endKey) {
+                      classes.push("custom-range-middle");
+                    }
+
+                    return classes.length > 0 ? classes.join(" ") : undefined;
+                  }}
+                  tileContent={({ date }) => {
+                    const key = toDateKey(date);
+                    const dayBookings = bookingsByDate.get(key) ?? [];
+                    const holidayName = getFrenchHolidayName(date);
+
+                    if (dayBookings.length === 0 && !holidayName) {
+                      return null;
+                    }
+
+                    if (dayBookings.length === 0) {
+                      return <div className="tile-indicators holiday-only">{holidayName && <span className="holiday-name">{holidayName}</span>}</div>;
+                    }
+
+                    return (
+                      <div className="tile-indicators">
+                        {holidayName && <span className="holiday-name">{holidayName}</span>}
+                        {dayBookings.slice(0, 2).map((booking) => (
+                          <span
+                            key={`${key}-${booking.id}`}
+                            className={`day-booking-chip ${booking.type} ${userThemeClass(booking.userName)}`}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              setActiveBooking(booking);
+                            }}
+                          >
+                            {booking.userName}
+                          </span>
+                        ))}
+                        {dayBookings.length > 2 && <span className="badge provisional">+{dayBookings.length - 2}</span>}
                       </div>
+                    );
+                  }}
+                />
+                <p className="calendar-hint">
+                  {!rangeStart && "Sélection: clique une date de début puis une date de fin"}
+                  {rangeStart && !rangeEnd && `Début sélectionné: ${toDateKey(rangeStart)} · clique la date de fin`}
+                  {rangeStart && rangeEnd && `Dates sélectionnées: ${formatStay(toDateKey(rangeStart), toDateKey(rangeEnd))}`}
+                </p>
+                {rangeStart && (
+                  <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                    {hasCompleteRange && (
+                      <button type="button" onClick={openBookingCreationPopup}>
+                        Réserver un séjour
+                      </button>
                     )}
-                    {renderComments(booking)}
-                  </article>
-                ))}
+                    <button type="button" className="secondary-button" onClick={clearSelection}>
+                      Annuler la sélection
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </section>
-        </div>
-      </main>
 
-      <section className={`card past-feed ${collapsedSections.pastBookings ? "is-collapsed" : ""}`}>
+          <div className="side-column">
+            {IS_DEV && (
+              <section className={`card dev-tools ${collapsedSections.devTools ? "is-collapsed" : ""}`}>
+                <div className="section-header">
+                  <h2>Outils dev</h2>
+                  <button
+                    type="button"
+                    className="section-toggle"
+                    onClick={() => toggleSection("devTools")}
+                    aria-expanded={!collapsedSections.devTools}
+                    aria-label={collapsedSections.devTools ? "Déplier" : "Réduire"}
+                  />
+                </div>
+                {!collapsedSections.devTools && (
+                  <>
+                    <button type="button" className="danger-button" onClick={resetDevData} disabled={isResetting || isSeeding}>
+                      {isResetting ? "Réinitialisation..." : "Vider la base"}
+                    </button>
+                    <button type="button" className="secondary-button" onClick={() => void seedDevData()} disabled={isSeeding || isResetting}>
+                      {isSeeding ? "Peuplement..." : "Peupler la base"}
+                    </button>
+                    <label>
+                      Utilisateur cible (push test)
+                      <select value={devTargetUserId} onChange={(event) => setDevTargetUserId(event.target.value)}>
+                        {users.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <p className="dev-message">
+                      {!hasLoadedPushSubscriptions && "Statut cible: inconnu (clique "}
+                      {!hasLoadedPushSubscriptions && <strong>"Lister les abonnements push"</strong>}
+                      {!hasLoadedPushSubscriptions && ")"}
+                      {hasLoadedPushSubscriptions &&
+                        targetPushSubscriptionsCount > 0 &&
+                        `Statut cible: ✅ abonné (${targetPushSubscriptionsCount})`}
+                      {hasLoadedPushSubscriptions && targetPushSubscriptionsCount === 0 && "Statut cible: ❌ non abonné"}
+                    </p>
+                    <label>
+                      Titre notification
+                      <input value={devPushTitle} onChange={(event) => setDevPushTitle(event.target.value)} />
+                    </label>
+                    <label>
+                      Message notification
+                      <input value={devPushBody} onChange={(event) => setDevPushBody(event.target.value)} />
+                    </label>
+                    <button type="button" onClick={() => void sendDevPushTest()} disabled={isSendingDevPush || !devTargetUserId}>
+                      {isSendingDevPush ? "Envoi..." : "Envoyer une notif test"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => void loadPushSubscriptions()}
+                      disabled={isLoadingPushSubscriptions}
+                    >
+                      {isLoadingPushSubscriptions ? "Chargement..." : "Lister les abonnements push"}
+                    </button>
+                    {pushSubscriptionsView.length > 0 && (
+                      <div>
+                        {pushSubscriptionsView.map((subscription) => (
+                          <p key={subscription.id} className="dev-message">
+                            {subscription.userId} · {subscription.endpoint.slice(0, 60)}...
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {devMessage && <p className="dev-message">{devMessage}</p>}
+                  </>
+                )}
+              </section>
+            )}
+
+            <section className={`card ${collapsedSections.upcomingBookings ? "is-collapsed" : ""}`}>
+              <div className="section-header">
+                <h2>Réservations à venir <span className="section-count">{upcomingBookings.length}</span></h2>
+                <button
+                  type="button"
+                  className="section-toggle"
+                  onClick={() => toggleSection("upcomingBookings")}
+                  aria-expanded={!collapsedSections.upcomingBookings}
+                  aria-label={collapsedSections.upcomingBookings ? "Déplier" : "Réduire"}
+                />
+              </div>
+              {!collapsedSections.upcomingBookings && (
+                <>
+                  {upcomingBookings.length === 0 && <p>Aucune réservation à venir.</p>}
+                  {upcomingBookings.map((booking) => (
+                    <article key={booking.id} className={`booking ${booking.type} ${userThemeClass(booking.userName)}`}>
+                      <p>
+                        <strong style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigateToBooking(booking.id)}>
+                          {booking.title}
+                        </strong>
+                      </p>
+                      <p>
+                        <strong>{booking.userName}</strong> · {booking.type === "definitive" ? "Définitive" : "Provisoire"}
+                      </p>
+                      <p>{formatStay(booking.startDate, booking.endDate)}</p>
+                      <p>{booking.note || "Aucune note"}</p>
+                      {currentUserId === booking.userId && (
+                        <div className="edit-actions">
+                          <button type="button" onClick={() => openBookingEditor(booking)}>
+                            Modifier
+                          </button>
+                          <button
+                            type="button"
+                            className="danger-button"
+                            onClick={() => void deleteBookingFromList(booking)}
+                          >
+                            Supprimer cette réservation
+                          </button>
+                        </div>
+                      )}
+                      {renderComments(booking)}
+                    </article>
+                  ))}
+                </>
+              )}
+            </section>
+          </div>
+        </main>
+      )}
+
+      {!bookingPage && <section className={`card past-feed ${collapsedSections.pastBookings ? "is-collapsed" : ""}`}>
         <div className="section-header">
           <h2>Réservations passées <span className="section-count">{pastBookings.length}</span></h2>
           <button
@@ -1275,9 +1376,8 @@ export default function App() {
             className="section-toggle"
             onClick={() => toggleSection("pastBookings")}
             aria-expanded={!collapsedSections.pastBookings}
-          >
-            {collapsedSections.pastBookings ? "Déplier" : "Réduire"}
-          </button>
+            aria-label={collapsedSections.pastBookings ? "Déplier" : "Réduire"}
+          />
         </div>
         {!collapsedSections.pastBookings && (
           <>
@@ -1286,7 +1386,9 @@ export default function App() {
               <article key={booking.id} className={`post-card ${userThemeClass(booking.userName)}`}>
                 <header className="post-header">
                   <p className="post-title">
-                    <strong>{booking.title}</strong>
+                    <strong style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigateToBooking(booking.id)}>
+                      {booking.title}
+                    </strong>
                   </p>
                 </header>
 
@@ -1326,9 +1428,9 @@ export default function App() {
             ))}
           </>
         )}
-      </section>
+      </section>}
 
-      <section className={`card album ${collapsedSections.album ? "is-collapsed" : ""}`}>
+      {!bookingPage && <section className={`card album ${collapsedSections.album ? "is-collapsed" : ""}`}>
         <div className="section-header">
           <h2>Album des photos du van <span className="section-count">{photos.length}</span></h2>
           <button
@@ -1336,9 +1438,8 @@ export default function App() {
             className="section-toggle"
             onClick={() => toggleSection("album")}
             aria-expanded={!collapsedSections.album}
-          >
-            {collapsedSections.album ? "Déplier" : "Réduire"}
-          </button>
+            aria-label={collapsedSections.album ? "Déplier" : "Réduire"}
+          />
         </div>
         {!collapsedSections.album &&
           (photos.length === 0 ? (
@@ -1355,7 +1456,7 @@ export default function App() {
               ))}
             </div>
           ))}
-      </section>
+      </section>}
 
       {activeBooking && (
         <div className="modal-overlay" onClick={() => setActiveBooking(null)}>
@@ -1475,7 +1576,7 @@ export default function App() {
                   <button type="button" onClick={saveBookingEdits} disabled={isSavingEdit}>
                     {isSavingEdit ? "Enregistrement..." : "Enregistrer"}
                   </button>
-                  <button type="button" onClick={() => setActiveBooking(null)}>
+                  <button type="button" onClick={closeBookingEditor}>
                     Annuler
                   </button>
                 </div>

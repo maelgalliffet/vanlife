@@ -22,6 +22,52 @@ warn() {
   echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
+error() {
+  echo -e "\033[0;31m[ERROR]\033[0m $1"
+}
+
+require_tfvars_value() {
+  local key="$1"
+  local file="$2"
+  sed -n -E "s|^[[:space:]]*${key}[[:space:]]*=[[:space:]]*\"([^\"]+)\".*$|\1|p" "$file" | head -1
+}
+
+validate_secret_keys() {
+  local tfvars_file="terraform/terraform.tfvars"
+
+  log "0. Vérification des clés privées (EventBridge / VAPID)..."
+
+  if [ ! -f "$tfvars_file" ]; then
+    error "Fichier ${tfvars_file} introuvable. Crée-le avec eventbridge_api_key et push_vapid_private_key (ou vapid_private_key)."
+    exit 1
+  fi
+
+  local eventbridge_key=""
+  local push_vapid_private_key=""
+  local legacy_vapid_private_key=""
+
+  eventbridge_key="$(require_tfvars_value "eventbridge_api_key" "$tfvars_file")"
+  push_vapid_private_key="$(require_tfvars_value "push_vapid_private_key" "$tfvars_file")"
+  legacy_vapid_private_key="$(require_tfvars_value "vapid_private_key" "$tfvars_file")"
+
+  if [ -z "$eventbridge_key" ]; then
+    error "eventbridge_api_key est manquante ou vide dans ${tfvars_file}."
+    exit 1
+  fi
+
+  if [ -z "$push_vapid_private_key" ] && [ -z "$legacy_vapid_private_key" ]; then
+    error "push_vapid_private_key (ou vapid_private_key) est manquante dans ${tfvars_file}."
+    exit 1
+  fi
+
+  if [ -z "$push_vapid_private_key" ] && [ -n "$legacy_vapid_private_key" ]; then
+    warn "Utilisation de la clé legacy vapid_private_key. Pense à migrer vers push_vapid_private_key."
+  fi
+
+  success "Clés EventBridge/VAPID détectées"
+  echo ""
+}
+
 TERRAFORM_DIR="terraform"
 API_LAMBDA_DIR="apps/api-lambda"
 WEB_DIR="apps/web"
@@ -29,6 +75,8 @@ DIST_DIR="dist"
 
 log "🚀 Déploiement sur AWS Lambda + S3"
 echo ""
+
+validate_secret_keys
 
 # 1. Build Lambda function (Terraform créera le ZIP)
 log "1. Préparation de la fonction Lambda..."

@@ -90,13 +90,19 @@ export async function deleteBooking(apiUrl: string, bookingId: string, requester
   await expectApiClientOk(response, "Impossible de supprimer la réservation");
 }
 
-export async function addBookingComment(apiUrl: string, bookingId: string, userId: string, text: string): Promise<void> {
+export async function addBookingComment(
+  apiUrl: string,
+  bookingId: string,
+  userId: string,
+  text: string,
+  currentEndpoint?: string
+): Promise<void> {
   const response = await fetch(`${apiUrl}/bookings/${bookingId}/comments`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ userId, text })
+    body: JSON.stringify({ userId, text, currentEndpoint })
   });
 
   await expectApiClientOk(response, "Impossible d'ajouter le commentaire");

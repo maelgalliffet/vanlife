@@ -85,14 +85,18 @@ function isWindowsPushEndpoint(endpoint: string): boolean {
 export async function sendPushToUsers(
     db: Database,
     userIds: string[],
-    payload: PushPayload
+    payload: PushPayload,
+    options?: { excludedEndpoints?: string[] }
 ): Promise<{ removedSubscriptionIds: string[]; attempted: number; delivered: number; failed: number }> {
     if (!notificationsEnabled || userIds.length === 0) {
         return { removedSubscriptionIds: [], attempted: 0, delivered: 0, failed: 0 };
     }
 
     const targetUserIds = new Set(userIds);
-    const records = db.pushSubscriptions.filter((subscription) => targetUserIds.has(subscription.userId));
+    const excludedEndpoints = new Set(options?.excludedEndpoints ?? []);
+    const records = db.pushSubscriptions.filter(
+        (subscription) => targetUserIds.has(subscription.userId) && !excludedEndpoints.has(subscription.endpoint)
+    );
 
     const removedSubscriptionIds: string[] = [];
     let delivered = 0;

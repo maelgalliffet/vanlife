@@ -39,4 +39,5 @@ export interface PhotoItem {
   type: BookingType;
   note: string;
   bookingId: string;
+  bookingCreatedAt: string;
 }

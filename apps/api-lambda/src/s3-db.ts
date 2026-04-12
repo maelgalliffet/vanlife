@@ -145,6 +145,7 @@ export interface Booking {
     updatedAt?: string;
   }>;
   publishedNotificationSentAt?: string;
+  endNotificationSentAt?: string;
 }
 
 export interface Database {

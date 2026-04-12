@@ -12,8 +12,12 @@ type NotifyPayload = {
 
 type RegisterBookingInteractionRoutesDeps = {
   normalizeBooking: (booking: Booking) => Booking;
-  isPublishedBooking: (booking: Booking) => boolean;
-  notifyUsers: (db: Awaited<ReturnType<typeof readDb>>, userIds: string[], payload: NotifyPayload) => Promise<void>;
+  notifyUsers: (
+    db: Awaited<ReturnType<typeof readDb>>,
+    userIds: string[],
+    payload: NotifyPayload,
+    options?: { excludedEndpoints?: string[] }
+  ) => Promise<void>;
 };
 
 type DatabaseState = Awaited<ReturnType<typeof readDb>>;
@@ -25,6 +29,15 @@ function getRequesterUserId(req: Request): string {
 
   const bodyRequester = (req.body as { requesterUserId?: string } | undefined)?.requesterUserId;
   return bodyRequester ?? "";
+}
+
+function getCurrentEndpoint(req: Request): string {
+  if (typeof req.query.currentEndpoint === "string") {
+    return req.query.currentEndpoint;
+  }
+
+  const bodyCurrentEndpoint = (req.body as { currentEndpoint?: string } | undefined)?.currentEndpoint;
+  return bodyCurrentEndpoint ?? "";
 }
 
 function normalizeCommentText(value: string | undefined): string {
@@ -47,7 +60,7 @@ async function persistNormalizedBooking(db: DatabaseState, booking: Booking, nor
 }
 
 export function registerBookingInteractionRoutes(router: Router, deps: RegisterBookingInteractionRoutesDeps): void {
-  const { normalizeBooking, isPublishedBooking, notifyUsers } = deps;
+  const { normalizeBooking, notifyUsers } = deps;
 
   router.post("/bookings/:id/reactions", async (req: Request<{ id: string }>, res) => {
     try {
@@ -98,6 +111,7 @@ export function registerBookingInteractionRoutes(router: Router, deps: RegisterB
     try {
       const bookingId = req.params.id;
       const { userId, text } = req.body as { userId?: string; text?: string };
+      const currentEndpoint = getCurrentEndpoint(req);
       const normalizedText = normalizeCommentText(text);
 
       if (!userId || !normalizedText) {
@@ -126,16 +140,15 @@ export function registerBookingInteractionRoutes(router: Router, deps: RegisterB
 
       await persistNormalizedBooking(db, booking, normalized);
 
-      if (isPublishedBooking(normalized)) {
-        const priorCommenterIds = normalized.comments.map((item) => item.userId);
-        const recipients = uniqueUserIds([normalized.userId, ...priorCommenterIds]).filter((id) => id !== userId);
-        await notifyUsers(db, recipients, {
-          title: "💬 Nouveau commentaire",
-          body: `${user.name} a commenté votre réservation : ${normalized.title}`,
-          url: "/",
-          tag: `publication-comment-${normalized.id}`
-        });
-      }
+      const priorCommenterIds = normalized.comments.map((item) => item.userId);
+      const baseRecipients = uniqueUserIds(priorCommenterIds).filter((id) => id !== userId);
+      const recipients = uniqueUserIds([...baseRecipients, normalized.userId]);
+      await notifyUsers(db, recipients, {
+        title: "💬 Nouveau commentaire",
+        body: `${user.name} a commenté votre réservation : ${normalized.title}`,
+        url: `/?booking=${normalized.id}`,
+        tag: `publication-comment-${normalized.id}`
+      }, currentEndpoint ? { excludedEndpoints: [currentEndpoint] } : undefined);
 
       return res.status(201).json(comment);
     } catch (error) {

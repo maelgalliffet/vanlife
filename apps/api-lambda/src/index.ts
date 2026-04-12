@@ -56,6 +56,23 @@ function getDateKeysBetween(startDateStr: string, endDateStr: string): string[] 
   return keys;
 }
 
+function validateInternalRequest(req: Request): boolean {
+  // Allow requests in local dev or with valid API key
+  if (isLocalStorage) {
+    return true;
+  }
+
+  const apiKey = req.headers["x-eventbridge-key"] || req.query.key;
+  const expectedKey = process.env.EVENTBRIDGE_API_KEY;
+
+  if (!expectedKey) {
+    // If no key is set, deny access to internal endpoints
+    return false;
+  }
+
+  return apiKey === expectedKey;
+}
+
 function parseRemovePhotoUrls(value: string | undefined): string[] {
   if (!value) return [];
   try {
@@ -68,6 +85,51 @@ function parseRemovePhotoUrls(value: string | undefined): string[] {
 
 function getTodayKey(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function getDateKeyInTimezone(date: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
+function shiftDateKey(dateKey: string, days: number): string {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getYesterdayKeyInTimezone(timeZone: string): string {
+  const todayInTimezone = getDateKeyInTimezone(new Date(), timeZone);
+  return shiftDateKey(todayInTimezone, -1);
+}
+
+function getHourInTimezone(date: Date, timeZone: string): number {
+  const hourText = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    hour12: false
+  }).format(date);
+
+  const hour = Number.parseInt(hourText, 10);
+  return Number.isNaN(hour) ? -1 : hour;
+}
+
+function shouldRunEndedNotificationsNow(timeZone: string, targetHour: number): boolean {
+  return getHourInTimezone(new Date(), timeZone) === targetHour;
 }
 
 function getDefaultBookingTitle(startDate: string, endDate: string): string {
@@ -86,8 +148,13 @@ function isPublishedBooking(booking: Booking): boolean {
   return booking.endDate < getTodayKey();
 }
 
-async function notifyUsers(db: Database, userIds: string[], payload: { title: string; body: string; url?: string; tag?: string }) {
-  const { removedSubscriptionIds } = await sendPushToUsers(db, uniqueUserIds(userIds), payload);
+async function notifyUsers(
+  db: Database,
+  userIds: string[],
+  payload: { title: string; body: string; url?: string; tag?: string },
+  options?: { excludedEndpoints?: string[] }
+) {
+  const { removedSubscriptionIds } = await sendPushToUsers(db, uniqueUserIds(userIds), payload, options);
   if (removedSubscriptionIds.length > 0) {
     removeSubscriptionsById(db, removedSubscriptionIds);
     await writeDb(db);
@@ -112,7 +179,7 @@ async function notifyNewPublicationsIfNeeded(db: Database): Promise<void> {
     await notifyUsers(db, allUserIds, {
       title: "📣 Réservation publiée",
       body: `${booking.userName} · ${booking.startDate}${booking.startDate === booking.endDate ? "" : ` → ${booking.endDate}`}`,
-      url: "/",
+      url: `/?booking=${booking.id}`,
       tag: `publication-${booking.id}`
     });
 
@@ -125,11 +192,69 @@ async function notifyNewPublicationsIfNeeded(db: Database): Promise<void> {
   await writeDb(db);
 }
 
+async function notifyEndedBookingsIfNeeded(db: Database, options?: { timeZone?: string }): Promise<void> {
+  const allUserIds = db.users.map((user) => user.id);
+  if (allUserIds.length === 0) {
+    return;
+  }
+
+  const notificationTimezone = options?.timeZone || process.env.NOTIFICATIONS_TIMEZONE || "Europe/Paris";
+  const yesterdayKey = getYesterdayKeyInTimezone(notificationTimezone);
+  const toNotify = db.bookings
+    .map(normalizeBooking)
+    .filter((booking) => booking.endDate === yesterdayKey && !booking.endNotificationSentAt);
+
+  if (toNotify.length === 0) {
+    return;
+  }
+
+  for (const booking of toNotify) {
+    await notifyUsers(db, allUserIds, {
+      title: "🎉 Réservation terminée",
+      body: `${booking.userName} · ${booking.startDate}${booking.startDate === booking.endDate ? "" : ` → ${booking.endDate}`}`,
+      url: `/?booking=${booking.id}`,
+      tag: `ended-${booking.id}`
+    });
+
+    const target = db.bookings.find((item) => item.id === booking.id);
+    if (target) {
+      target.endNotificationSentAt = new Date().toISOString();
+    }
+  }
+
+  await writeDb(db);
+}
+
 type BookingType = "provisional" | "definitive";
 
 // Routes
 router.get("/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+router.get("/internal/check-ended-bookings", async (req, res) => {
+  try {
+    if (!validateInternalRequest(req)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    const notificationTimezone = process.env.NOTIFICATIONS_TIMEZONE || "Europe/Paris";
+    const force = req.query.force === "true";
+    if (!force && !shouldRunEndedNotificationsNow(notificationTimezone, 8)) {
+      return res.json({
+        ok: true,
+        skipped: true,
+        message: `Skipped: ended bookings notifications run at 08:00 (${notificationTimezone})`,
+      });
+    }
+
+    const db = await readDb();
+    await notifyEndedBookingsIfNeeded(db, { timeZone: notificationTimezone });
+    return res.json({ ok: true, message: "Ended bookings notifications processed" });
+  } catch (error) {
+    console.error("Error checking ended bookings:", error);
+    return res.status(500).json({ message: "Error checking ended bookings" });
+  }
 });
 
 router.get("/users", async (_req, res) => {
@@ -176,7 +301,8 @@ router.get("/photos", async (_req, res) => {
           userName: normalized.userName,
           type: normalized.type,
           note: normalized.note,
-          bookingId: normalized.id
+          bookingId: normalized.id,
+          bookingCreatedAt: normalized.createdAt
         });
       });
     });
@@ -516,7 +642,7 @@ router.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{
     await notifyUsers(db, recipients, {
       title: "🗓️ Nouvelle réservation",
       body: `${user.name} a effectué une nouvelle réservation : ${booking.title}`,
-      url: "/",
+      url: `/?booking=${booking.id}`,
       tag: `booking-created-${booking.id}`
     });
 
@@ -622,7 +748,7 @@ router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id
       await notifyUsers(db, recipients, {
         title: "🖼️ Nouvelle photo",
         body: `${updatedBooking.userName} a rajouté une nouvelle photo : ${updatedBooking.title}`,
-        url: "/",
+        url: `/?booking=${updatedBooking.id}`,
         tag: `publication-photo-${updatedBooking.id}`
       });
     }
@@ -679,7 +805,6 @@ router.delete("/bookings/:id", async (req: Request<{ id: string }>, res) => {
 
 registerBookingInteractionRoutes(router, {
   normalizeBooking,
-  isPublishedBooking,
   notifyUsers
 });
 

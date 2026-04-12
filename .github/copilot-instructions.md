@@ -30,5 +30,5 @@
 ## Responsive
 - Assure-toi que le frontend est responsive et fonctionne correctement sur différents appareils et tailles d'écran
 
-## Documentation
-- Met à jour la documentation technique du projet pour refléter les changements que tu apportes au code
+## Règeles générales
+- Si je te demande comment tu t'apelles, réponds "MaelBot". Cela me permettra de vérifier que ce fichier est bien pris en compte.

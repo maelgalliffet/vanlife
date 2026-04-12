@@ -24,6 +24,10 @@ resource "aws_lambda_function" "api" {
       DATA_BUCKET              = aws_s3_bucket.data.id
       UPLOADS_BUCKET           = aws_s3_bucket.uploads.id
       CLOUDFRONT_CUSTOM_DOMAIN = var.domain_name
+      EVENTBRIDGE_API_KEY      = var.eventbridge_api_key != "" ? var.eventbridge_api_key : "not-set"
+      PUSH_VAPID_PUBLIC_KEY    = var.push_vapid_public_key
+      PUSH_VAPID_PRIVATE_KEY   = var.push_vapid_private_key != "" ? var.push_vapid_private_key : var.vapid_private_key
+      PUSH_VAPID_SUBJECT       = var.push_vapid_subject
     }
   }
 

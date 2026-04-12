@@ -43,10 +43,18 @@
           "userName": "Ivan/Isa",
           "text": "Pensez aux chaînes, la météo annonce de la neige.",
           "createdAt": "2026-01-05T11:04:00.000Z"
+        },
+        {
+          "id": "73e2fd24-d0e9-4ef9-86e7-b4cea7bd928a",
+          "userId": "ivan",
+          "userName": "Ivan/Isa",
+          "text": "Test",
+          "createdAt": "2026-04-12T13:09:41.071Z"
         }
       ],
       "publishedNotificationSentAt": "2026-01-11T09:00:00.000Z",
-      "title": "2026-01-09 -> 2026-01-11"
+      "title": "2026-01-09 -> 2026-01-11",
+      "endNotificationSentAt": "2026-04-12T13:26:45.844Z"
     },
     {
       "id": "seed-ivan-plage",
@@ -63,7 +71,12 @@
       "userName": "Ivan/Isa",
       "type": "definitive",
       "note": "Week-end plage à Arcachon. Retour lundi.",
-      "photoUrls": [],
+      "photoUrls": [
+        "http://localhost:4000/uploads/1776000033270-c7ded47f-4374-4c94-bedb-8aae2ee7b502.jpg",
+        "http://localhost:4000/uploads/1776000033274-72aee763-dc8f-4702-95f7-7e72f2e551ec.png",
+        "http://localhost:4000/uploads/1776000033286-5e1ef5fe-0b1c-47e9-88d5-24da66e25c00.png",
+        "http://localhost:4000/uploads/1776000033291-a7fe2ab1-55c6-41e4-bc92-243bd4afc012.png"
+      ],
       "createdAt": "2026-02-03T10:00:00.000Z",
       "reactions": {
         "mael": "🌊",
@@ -79,7 +92,8 @@
         }
       ],
       "publishedNotificationSentAt": "2026-02-11T09:00:00.000Z",
-      "title": "2026-02-08 -> 2026-02-11"
+      "title": "2026-02-08 -> 2026-02-11",
+      "endNotificationSentAt": "2026-04-12T13:26:46.249Z"
     },
     {
       "id": "seed-lena-vercors",
@@ -102,7 +116,8 @@
       },
       "comments": [],
       "publishedNotificationSentAt": "2026-03-06T09:00:00.000Z",
-      "title": "2026-03-05 -> 2026-03-06"
+      "title": "2026-03-05 -> 2026-03-06",
+      "endNotificationSentAt": "2026-04-12T13:26:46.555Z"
     },
     {
       "id": "seed-mael-courses",
@@ -121,8 +136,18 @@
       "reactions": {
         "lena": "🧹"
       },
-      "comments": [],
-      "title": "2026-04-06 -> 2026-04-06"
+      "comments": [
+        {
+          "id": "026fb149-3c21-43bc-bf79-2f4869d578c8",
+          "userId": "ivan",
+          "userName": "Ivan/Isa",
+          "text": "test",
+          "createdAt": "2026-04-12T12:38:51.356Z"
+        }
+      ],
+      "title": "2026-04-06 -> 2026-04-06",
+      "publishedNotificationSentAt": "2026-04-12T12:38:25.713Z",
+      "endNotificationSentAt": "2026-04-12T13:26:46.863Z"
     },
     {
       "id": "seed-lena-surf",
@@ -205,38 +230,94 @@
         }
       ],
       "title": "2026-06-18 -> 2026-06-26"
+    },
+    {
+      "id": "48214f0e-c103-4aa6-937d-114904056da8",
+      "weekendKey": "2026-04-01",
+      "startDate": "2026-04-01",
+      "endDate": "2026-04-03",
+      "dateKeys": [
+        "2026-04-01",
+        "2026-04-02",
+        "2026-04-03"
+      ],
+      "userId": "mael",
+      "userName": "Maël/Salma",
+      "type": "provisional",
+      "title": "TEST",
+      "note": "",
+      "photoUrls": [],
+      "createdAt": "2026-04-12T12:39:27.321Z",
+      "reactions": {},
+      "comments": [],
+      "publishedNotificationSentAt": "2026-04-12T12:39:27.807Z",
+      "endNotificationSentAt": "2026-04-12T13:26:47.274Z"
+    },
+    {
+      "id": "547d8bdb-14ac-4ded-b536-3ea057a8defa",
+      "weekendKey": "2026-05-20",
+      "startDate": "2026-05-20",
+      "endDate": "2026-05-22",
+      "dateKeys": [
+        "2026-05-20",
+        "2026-05-21",
+        "2026-05-22"
+      ],
+      "userId": "mael",
+      "userName": "Maël/Salma",
+      "type": "provisional",
+      "title": "TEST",
+      "note": "",
+      "photoUrls": [],
+      "createdAt": "2026-04-12T12:39:56.876Z",
+      "reactions": {},
+      "comments": [
+        {
+          "id": "d2379207-bc45-44fa-8352-0864496808d4",
+          "userId": "ivan",
+          "userName": "Ivan/Isa",
+          "text": "OK ?",
+          "createdAt": "2026-04-12T12:46:26.152Z"
+        }
+      ]
+    },
+    {
+      "id": "5acdced4-e23b-49dd-8c90-d9a72c0bbee4",
+      "weekendKey": "2026-04-10",
+      "startDate": "2026-04-10",
+      "endDate": "2026-04-11",
+      "dateKeys": [
+        "2026-04-10",
+        "2026-04-11"
+      ],
+      "userId": "mael",
+      "userName": "Maël/Salma",
+      "type": "provisional",
+      "title": "TEST NOTIF",
+      "note": "",
+      "photoUrls": [],
+      "createdAt": "2026-04-12T13:37:47.570Z",
+      "reactions": {},
+      "comments": [],
+      "publishedNotificationSentAt": "2026-04-12T13:37:48.182Z",
+      "endNotificationSentAt": "2026-04-12T13:38:02.839Z"
     }
   ],
   "pushSubscriptions": [
     {
-      "id": "db323b5e-460f-490b-9387-ca89149b3841",
+      "id": "5f346c1e-8009-4c5b-bb16-63db4dc74cc2",
       "userId": "mael",
-      "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAADnLyoOUizEHRqmm7ErTy1XUe8M3umDtZlQc4TA6%2bBmuztsPWAP1Nf7YJ2dsIA3KdYUKOJ63jSQ1Vh51F4DTDARRYhdaaBEp9x4TtSeqv68WScQ7HQJyjftH%2fFtsc1WBVbUkQnDyBjAsCV6rdGLhj2hDapNWs0bWm098rdqZXht3y5J%2f2TcKdRwdeNc7H1TxVziiiIlf%2b1%2bwYqz%2baCMH9lPEB7f8zUSPxLVGOtB21h7KD%2bu%2bYuhsqrgMHQxx9GmDq3clXtGUF6CR%2fJPpxX1W1lhH9yf89BqPCfoYSSBcdb7nDHqe1zMfQjWRClPt8u6kFXUxjTyRAUU4MpgXgx6SrYF",
+      "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAACCvJw44YWLb1Zinr585PLNvZ6NL9Z%2bL4hwUd4nV9FpeFjLr9HN9ha%2ftY11%2bOCZea7wcwGfFI1TedP%2bioePyV9WoXu0v1rTni8HCUi3eIwZmRIS2HMbdWlRY5GIBpWO0Xb9nUs49%2fo%2ftpks7UU1pR0O%2fDRvMTrmEWL%2fh8mMOy9KBn6M7U9u9OxmXXz2DgcbGzy0v92Hua%2fjR7El%2bu2ZuuFiIWAJAlxlfjfQIMeoMVY4B2OkEozWIVyOi2znFUVXsTB%2fecFyPnrlsEZP%2fK9S0Acz0BBH0oztOF9hkaWRKGBcJvyEwZHOimx8Qe3Toy8vDDg%3d",
       "subscription": {
-        "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAADnLyoOUizEHRqmm7ErTy1XUe8M3umDtZlQc4TA6%2bBmuztsPWAP1Nf7YJ2dsIA3KdYUKOJ63jSQ1Vh51F4DTDARRYhdaaBEp9x4TtSeqv68WScQ7HQJyjftH%2fFtsc1WBVbUkQnDyBjAsCV6rdGLhj2hDapNWs0bWm098rdqZXht3y5J%2f2TcKdRwdeNc7H1TxVziiiIlf%2b1%2bwYqz%2baCMH9lPEB7f8zUSPxLVGOtB21h7KD%2bu%2bYuhsqrgMHQxx9GmDq3clXtGUF6CR%2fJPpxX1W1lhH9yf89BqPCfoYSSBcdb7nDHqe1zMfQjWRClPt8u6kFXUxjTyRAUU4MpgXgx6SrYF",
+        "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAACCvJw44YWLb1Zinr585PLNvZ6NL9Z%2bL4hwUd4nV9FpeFjLr9HN9ha%2ftY11%2bOCZea7wcwGfFI1TedP%2bioePyV9WoXu0v1rTni8HCUi3eIwZmRIS2HMbdWlRY5GIBpWO0Xb9nUs49%2fo%2ftpks7UU1pR0O%2fDRvMTrmEWL%2fh8mMOy9KBn6M7U9u9OxmXXz2DgcbGzy0v92Hua%2fjR7El%2bu2ZuuFiIWAJAlxlfjfQIMeoMVY4B2OkEozWIVyOi2znFUVXsTB%2fecFyPnrlsEZP%2fK9S0Acz0BBH0oztOF9hkaWRKGBcJvyEwZHOimx8Qe3Toy8vDDg%3d",
         "expirationTime": null,
         "keys": {
-          "p256dh": "BCbZ2rUVWui_aNIuizMhcq6hMJiV7EA0bqyaN0EuHUW_FSTorPJN1CVPMK192u5GsjnIfVqPfkoSWvLy5I3YyU0",
-          "auth": "yYJLd-7Xs_f8sttz0nNScQ"
+          "p256dh": "BB-5B8FCkr8FF91NYP60bt_9sCCAtBFZtsPI8SoolQ3cyTSfsjEUBmICGUtzxPR5IWb8ewMwUMfn2qHL5N56Ew4",
+          "auth": "AO4myjlCPKr5z0Lyr5GXEA"
         }
       },
-      "createdAt": "2026-03-25T21:39:17.508Z",
-      "updatedAt": "2026-03-25T21:39:17.508Z"
-    },
-    {
-      "id": "44279103-77f3-48fd-acef-b031b27e9222",
-      "userId": "ivan",
-      "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAADnLyoOUizEHRqmm7ErTy1XUe8M3umDtZlQc4TA6%2bBmuztsPWAP1Nf7YJ2dsIA3KdYUKOJ63jSQ1Vh51F4DTDARRYhdaaBEp9x4TtSeqv68WScQ7HQJyjftH%2fFtsc1WBVbUkQnDyBjAsCV6rdGLhj2hDapNWs0bWm098rdqZXht3y5J%2f2TcKdRwdeNc7H1TxVziiiIlf%2b1%2bwYqz%2baCMH9lPEB7f8zUSPxLVGOtB21h7KD%2bu%2bYuhsqrgMHQxx9GmDq3clXtGUF6CR%2fJPpxX1W1lhH9yf89BqPCfoYSSBcdb7nDHqe1zMfQjWRClPt8u6kFXUxjTyRAUU4MpgXgx6SrYF",
-      "subscription": {
-        "endpoint": "https://wns2-par02p.notify.windows.com/w/?token=BQYAAADnLyoOUizEHRqmm7ErTy1XUe8M3umDtZlQc4TA6%2bBmuztsPWAP1Nf7YJ2dsIA3KdYUKOJ63jSQ1Vh51F4DTDARRYhdaaBEp9x4TtSeqv68WScQ7HQJyjftH%2fFtsc1WBVbUkQnDyBjAsCV6rdGLhj2hDapNWs0bWm098rdqZXht3y5J%2f2TcKdRwdeNc7H1TxVziiiIlf%2b1%2bwYqz%2baCMH9lPEB7f8zUSPxLVGOtB21h7KD%2bu%2bYuhsqrgMHQxx9GmDq3clXtGUF6CR%2fJPpxX1W1lhH9yf89BqPCfoYSSBcdb7nDHqe1zMfQjWRClPt8u6kFXUxjTyRAUU4MpgXgx6SrYF",
-        "expirationTime": null,
-        "keys": {
-          "p256dh": "BCbZ2rUVWui_aNIuizMhcq6hMJiV7EA0bqyaN0EuHUW_FSTorPJN1CVPMK192u5GsjnIfVqPfkoSWvLy5I3YyU0",
-          "auth": "yYJLd-7Xs_f8sttz0nNScQ"
-        }
-      },
-      "createdAt": "2026-03-25T22:22:47.996Z",
-      "updatedAt": "2026-03-25T22:22:47.996Z"
+      "createdAt": "2026-04-12T12:38:29.546Z",
+      "updatedAt": "2026-04-12T12:38:29.546Z"
     }
   ]
 }

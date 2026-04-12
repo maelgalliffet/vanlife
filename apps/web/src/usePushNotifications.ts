@@ -220,11 +220,25 @@ export function usePushNotifications(apiUrl: string, currentUserId: string) {
     }
   }, [apiUrl, currentUserId, isPushSupported]);
 
+  const getCurrentPushEndpoint = useCallback(async (): Promise<string | null> => {
+    if (!isPushSupported) {
+      return null;
+    }
+
+    try {
+      const { subscription } = await getPushContext(apiUrl);
+      return subscription?.endpoint ?? null;
+    } catch {
+      return null;
+    }
+  }, [apiUrl, isPushSupported]);
+
   return {
     isPushSupported,
     pushEnabled,
     pushLoading,
     pushError,
-    togglePushSubscription
+    togglePushSubscription,
+    getCurrentPushEndpoint
   };
 }

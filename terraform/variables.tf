@@ -21,3 +21,37 @@ variable "domain_name" {
   type        = string
   default     = "vanlife.galliffet.fr"
 }
+
+variable "eventbridge_api_key" {
+  description = "API key for EventBridge to call internal endpoints"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "push_vapid_public_key" {
+  description = "VAPID public key for push notifications"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "push_vapid_private_key" {
+  description = "VAPID private key for push notifications"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "vapid_private_key" {
+  description = "[DEPRECATED] Legacy VAPID private key. Prefer push_vapid_private_key"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "push_vapid_subject" {
+  description = "VAPID subject for push notifications"
+  type        = string
+  default     = ""
+}
