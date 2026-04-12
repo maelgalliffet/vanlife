@@ -38,6 +38,12 @@ export async function fetchBookingsAndPhotos(apiUrl: string): Promise<{ bookings
   };
 }
 
+export async function fetchBooking(apiUrl: string, bookingId: string): Promise<Booking> {
+  const response = await fetch(`${apiUrl}/bookings/${bookingId}`);
+  await expectApiClientOk(response, "Réservation introuvable");
+  return (await response.json()) as Booking;
+}
+
 export async function resetDevData(apiUrl: string): Promise<{ removedBookings: number; removedFiles: number }> {
   const response = await fetch(`${apiUrl}/dev/reset`, { method: "POST" });
   await expectApiClientOk(response, "Impossible de réinitialiser les données.");

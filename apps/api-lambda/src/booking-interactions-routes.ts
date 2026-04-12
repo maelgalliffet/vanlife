@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { Booking, readDb, writeDb } from "./s3-db.js";
 import { uniqueUserIds } from "./push.js";
+import { notificationMessages } from "./notification-messages.js";
 
 type NotifyPayload = {
   title: string;
@@ -12,7 +13,6 @@ type NotifyPayload = {
 
 type RegisterBookingInteractionRoutesDeps = {
   normalizeBooking: (booking: Booking) => Booking;
-  isPublishedBooking: (booking: Booking) => boolean;
   notifyUsers: (db: Awaited<ReturnType<typeof readDb>>, userIds: string[], payload: NotifyPayload) => Promise<void>;
 };
 
@@ -47,7 +47,7 @@ async function persistNormalizedBooking(db: DatabaseState, booking: Booking, nor
 }
 
 export function registerBookingInteractionRoutes(router: Router, deps: RegisterBookingInteractionRoutesDeps): void {
-  const { normalizeBooking, isPublishedBooking, notifyUsers } = deps;
+  const { normalizeBooking, notifyUsers } = deps;
 
   router.post("/bookings/:id/reactions", async (req: Request<{ id: string }>, res) => {
     try {
@@ -126,16 +126,9 @@ export function registerBookingInteractionRoutes(router: Router, deps: RegisterB
 
       await persistNormalizedBooking(db, booking, normalized);
 
-      if (isPublishedBooking(normalized)) {
-        const priorCommenterIds = normalized.comments.map((item) => item.userId);
-        const recipients = uniqueUserIds([normalized.userId, ...priorCommenterIds]).filter((id) => id !== userId);
-        await notifyUsers(db, recipients, {
-          title: "💬 Nouveau commentaire",
-          body: `${user.name} a commenté votre réservation : ${normalized.title}`,
-          url: "/",
-          tag: `publication-comment-${normalized.id}`
-        });
-      }
+      const priorCommenterIds = normalized.comments.map((item) => item.userId);
+      const recipients = uniqueUserIds([normalized.userId, ...priorCommenterIds]).filter((id) => id !== userId);
+      await notifyUsers(db, recipients, notificationMessages.newComment(user.name, normalized.title, normalized.id));
 
       return res.status(201).json(comment);
     } catch (error) {

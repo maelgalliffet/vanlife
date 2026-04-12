@@ -21,3 +21,15 @@ variable "domain_name" {
   type        = string
   default     = "vanlife.galliffet.fr"
 }
+
+variable "vapid_private_key" {
+  description = "Clé privée VAPID pour les notifications push (générer avec npx web-push generate-vapid-keys)"
+  type        = string
+  sensitive   = true
+}
+
+variable "vapid_subject" {
+  description = "Subject VAPID (mailto: ou URL du site)"
+  type        = string
+  default     = "mailto:contact@vanlife.galliffet.fr"
+}

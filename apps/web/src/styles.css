@@ -11,13 +11,27 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #0f172a;
+}
+
+/* Pseudo-element pour un fond vraiment fixe sur tous les navigateurs (incl. iOS Safari) */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
   background-image:
     linear-gradient(rgba(10, 20, 38, 0.55), rgba(10, 20, 38, 0.65)),
     url("/bg.png");
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
+}
+
+/* Sur mobile : dézoomer pour voir plus de l'image */
+@media (max-width: 768px) {
+  body::before {
+    background-size: 100% auto;
+    background-position: center top;
+  }
 }
 
 .page {
@@ -36,6 +50,32 @@ header {
 
 header h1 {
   margin: 0 0 0.55rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: fit-content;
+  margin-bottom: 0.6rem;
+  padding: 0.42rem 0.8rem;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+  text-shadow: none;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.2);
+}
+
+.back-link::before {
+  content: "←";
+  line-height: 1;
+}
+
+.back-link:hover {
+  background: #f8fafc;
 }
 
 .current-user-row {

@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { Booking, BookingType, PhotoItem, User } from "./types";
+import { BookingPublicationCard } from "./BookingPublicationCard";
 import { usePushNotifications } from "./usePushNotifications";
 import {
   addBookingComment,
@@ -1283,46 +1284,29 @@ export default function App() {
           <>
             {pastBookings.length === 0 && <p>Aucune réservation passée.</p>}
             {pastBookings.map((booking) => (
-              <article key={booking.id} className={`post-card ${userThemeClass(booking.userName)}`}>
-                <header className="post-header">
-                  <p className="post-title">
-                    <strong>{booking.title}</strong>
-                  </p>
-                </header>
-
-                <p className="post-meta">
-                  <strong>{booking.userName}</strong> · {formatStay(booking.startDate, booking.endDate)}
-                </p>
-
-                <p className="post-note">{booking.note || "Aucune note"}</p>
-
-                {booking.photoUrls.length > 0 && (
-                  <div className="post-photos">
-                    {booking.photoUrls.map((url, i) => (
-                      <button key={url} className="post-photo-btn" onClick={() => openLightbox(booking.photoUrls, i)} aria-label="Voir en grand">
-                        <img src={url} alt={`Photo ${booking.userName}`} loading="lazy" />
+              <BookingPublicationCard
+                key={booking.id}
+                booking={booking}
+                userThemeClass={userThemeClass}
+                onPhotoClick={openLightbox}
+                renderComments={renderComments}
+                renderActions={(value) =>
+                  currentUserId === value.userId ? (
+                    <div className="edit-actions">
+                      <button type="button" onClick={() => openBookingEditor(value)}>
+                        Modifier
                       </button>
-                    ))}
-                  </div>
-                )}
-
-                {renderComments(booking)}
-
-                {currentUserId === booking.userId && (
-                  <div className="edit-actions">
-                    <button type="button" onClick={() => openBookingEditor(booking)}>
-                      Modifier
-                    </button>
-                    <button
-                      type="button"
-                      className="danger-button post-delete-btn"
-                      onClick={() => void deleteBookingFromList(booking)}
-                    >
-                      Supprimer cette réservation
-                    </button>
-                  </div>
-                )}
-              </article>
+                      <button
+                        type="button"
+                        className="danger-button post-delete-btn"
+                        onClick={() => void deleteBookingFromList(value)}
+                      >
+                        Supprimer cette réservation
+                      </button>
+                    </div>
+                  ) : null
+                }
+              />
             ))}
           </>
         )}

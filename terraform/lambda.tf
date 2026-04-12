@@ -24,6 +24,8 @@ resource "aws_lambda_function" "api" {
       DATA_BUCKET              = aws_s3_bucket.data.id
       UPLOADS_BUCKET           = aws_s3_bucket.uploads.id
       CLOUDFRONT_CUSTOM_DOMAIN = var.domain_name
+      PUSH_VAPID_PRIVATE_KEY   = var.vapid_private_key
+      PUSH_VAPID_SUBJECT       = var.vapid_subject
     }
   }
 

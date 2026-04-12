@@ -42,6 +42,15 @@ echo ""
 # 2. Deploy infrastructure with Terraform
 log "2. Déploiement de l'infrastructure Terraform..."
 
+# Vérification du fichier de secrets VAPID
+if [ ! -f "$TERRAFORM_DIR/terraform.tfvars" ]; then
+  warn "Fichier $TERRAFORM_DIR/terraform.tfvars manquant."
+  warn "Les notifications push ne fonctionneront pas sans les clés VAPID."
+  warn "Créer le fichier avec : vapid_private_key = \"<clé>\""
+  warn "Générer une clé : cd apps/api-lambda && node -e \"const {generateVAPIDKeys}=require('web-push');console.log(JSON.stringify(generateVAPIDKeys(),null,2))\""
+  exit 1
+fi
+
 # 2a. Initialize remote state backend
 log "2a. Initialisation du backend S3..."
 bash ./scripts/init-backend.sh

@@ -23,6 +23,7 @@ import {
 } from "./push.js";
 import { registerPushRoutes } from "./push-routes.js";
 import { registerBookingInteractionRoutes } from "./booking-interactions-routes.js";
+import { notificationMessages } from "./notification-messages.js";
 
 const app = express();
 const router = Router();
@@ -109,12 +110,7 @@ async function notifyNewPublicationsIfNeeded(db: Database): Promise<void> {
   }
 
   for (const booking of toPublish) {
-    await notifyUsers(db, allUserIds, {
-      title: "📣 Réservation publiée",
-      body: `${booking.userName} · ${booking.startDate}${booking.startDate === booking.endDate ? "" : ` → ${booking.endDate}`}`,
-      url: "/",
-      tag: `publication-${booking.id}`
-    });
+    await notifyUsers(db, allUserIds, notificationMessages.newPublication(booking));
 
     const target = db.bookings.find((item) => item.id === booking.id);
     if (target) {
@@ -157,6 +153,20 @@ router.get("/bookings", async (req, res) => {
   } catch (error) {
     console.error("Error reading bookings:", error);
     res.status(500).json({ message: "Error reading bookings" });
+  }
+});
+
+router.get("/bookings/:id", async (req: Request<{ id: string }>, res) => {
+  try {
+    const db = await readDb();
+    const booking = db.bookings.find((item) => item.id === req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: "Réservation introuvable" });
+    }
+    return res.json(normalizeBooking(booking));
+  } catch (error) {
+    console.error("Error reading booking:", error);
+    res.status(500).json({ message: "Error reading booking" });
   }
 });
 
@@ -619,12 +629,7 @@ router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id
 
     if (addedPhotoUrls.length > 0 && isPublishedBooking(updatedBooking)) {
       const recipients = db.users.map((user) => user.id).filter((id) => id !== requesterUserId);
-      await notifyUsers(db, recipients, {
-        title: "🖼️ Nouvelle photo",
-        body: `${updatedBooking.userName} a rajouté une nouvelle photo : ${updatedBooking.title}`,
-        url: "/",
-        tag: `publication-photo-${updatedBooking.id}`
-      });
+      await notifyUsers(db, recipients, notificationMessages.newPhoto(updatedBooking.userName, updatedBooking.title, updatedBooking.id));
     }
 
     return res.json(updatedBooking);
@@ -679,7 +684,6 @@ router.delete("/bookings/:id", async (req: Request<{ id: string }>, res) => {
 
 registerBookingInteractionRoutes(router, {
   normalizeBooking,
-  isPublishedBooking,
   notifyUsers
 });
 
