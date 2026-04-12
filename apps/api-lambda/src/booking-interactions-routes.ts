@@ -16,7 +16,7 @@ type RegisterBookingInteractionRoutesDeps = {
     db: Awaited<ReturnType<typeof readDb>>,
     userIds: string[],
     payload: NotifyPayload,
-    options?: { excludedEndpoints?: string[] }
+    options?: { excludedEndpoints?: string[]; excludedUserEndpoints?: Map<string, string> }
   ) => Promise<void>;
 };
 
@@ -140,15 +140,18 @@ export function registerBookingInteractionRoutes(router: Router, deps: RegisterB
 
       await persistNormalizedBooking(db, booking, normalized);
 
-      const priorCommenterIds = normalized.comments.map((item) => item.userId);
-      const baseRecipients = uniqueUserIds(priorCommenterIds).filter((id) => id !== userId);
-      const recipients = uniqueUserIds([...baseRecipients, normalized.userId]);
+      const participantIds = uniqueUserIds(normalized.comments.map((item) => item.userId));
+      const recipients = uniqueUserIds([...participantIds, normalized.userId]);
+
+      // Exclude the current user's endpoint only for that user, not for other users
+      const excludedUserEndpoints = currentEndpoint ? new Map([[userId, currentEndpoint]]) : undefined;
+
       await notifyUsers(db, recipients, {
         title: "💬 Nouveau commentaire",
         body: `${user.name} a commenté votre réservation : ${normalized.title}`,
         url: `/?booking=${normalized.id}`,
         tag: `publication-comment-${normalized.id}`
-      }, currentEndpoint ? { excludedEndpoints: [currentEndpoint] } : undefined);
+      }, excludedUserEndpoints ? { excludedUserEndpoints } : undefined);
 
       return res.status(201).json(comment);
     } catch (error) {

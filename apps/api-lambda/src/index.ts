@@ -152,7 +152,7 @@ async function notifyUsers(
   db: Database,
   userIds: string[],
   payload: { title: string; body: string; url?: string; tag?: string },
-  options?: { excludedEndpoints?: string[] }
+  options?: { excludedEndpoints?: string[]; excludedUserEndpoints?: Map<string, string> }
 ) {
   const { removedSubscriptionIds } = await sendPushToUsers(db, uniqueUserIds(userIds), payload, options);
   if (removedSubscriptionIds.length > 0) {

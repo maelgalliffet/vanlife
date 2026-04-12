@@ -45,11 +45,11 @@
           "createdAt": "2026-01-05T11:04:00.000Z"
         },
         {
-          "id": "73e2fd24-d0e9-4ef9-86e7-b4cea7bd928a",
+          "id": "c0bf4c08-54e1-4e53-9251-a0a71e719d7a",
           "userId": "ivan",
           "userName": "Ivan/Isa",
           "text": "Test",
-          "createdAt": "2026-04-12T13:09:41.071Z"
+          "createdAt": "2026-04-12T14:00:40.257Z"
         }
       ],
       "publishedNotificationSentAt": "2026-01-11T09:00:00.000Z",
@@ -271,15 +271,7 @@
       "photoUrls": [],
       "createdAt": "2026-04-12T12:39:56.876Z",
       "reactions": {},
-      "comments": [
-        {
-          "id": "d2379207-bc45-44fa-8352-0864496808d4",
-          "userId": "ivan",
-          "userName": "Ivan/Isa",
-          "text": "OK ?",
-          "createdAt": "2026-04-12T12:46:26.152Z"
-        }
-      ]
+      "comments": []
     },
     {
       "id": "5acdced4-e23b-49dd-8c90-d9a72c0bbee4",
@@ -298,9 +290,36 @@
       "photoUrls": [],
       "createdAt": "2026-04-12T13:37:47.570Z",
       "reactions": {},
-      "comments": [],
+      "comments": [
+        {
+          "id": "872c38a8-201f-4edb-a35b-56c02e5d7d10",
+          "userId": "ivan",
+          "userName": "Ivan/Isa",
+          "text": "notif",
+          "createdAt": "2026-04-12T14:08:33.045Z"
+        }
+      ],
       "publishedNotificationSentAt": "2026-04-12T13:37:48.182Z",
       "endNotificationSentAt": "2026-04-12T13:38:02.839Z"
+    },
+    {
+      "id": "058b17bc-5377-45d0-93f6-dc87f38ee2c0",
+      "weekendKey": "2026-04-15",
+      "startDate": "2026-04-15",
+      "endDate": "2026-04-16",
+      "dateKeys": [
+        "2026-04-15",
+        "2026-04-16"
+      ],
+      "userId": "ivan",
+      "userName": "Ivan/Isa",
+      "type": "provisional",
+      "title": "2026-04-15 -> 2026-04-16",
+      "note": "OK ?",
+      "photoUrls": [],
+      "createdAt": "2026-04-12T14:04:55.341Z",
+      "reactions": {},
+      "comments": []
     }
   ],
   "pushSubscriptions": [

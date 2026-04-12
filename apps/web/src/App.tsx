@@ -8,13 +8,8 @@ import {
   ApiClientError,
   deleteBooking as deleteBookingRequest,
   deleteBookingComment,
-  DevPushSubscriptionView,
   fetchBookingsAndPhotos,
-  fetchDevPushSubscriptions,
   fetchUsers,
-  resetDevData as resetDevDataRequest,
-  seedDevData as seedDevDataRequest,
-  sendDevPushTest as sendDevPushTestRequest,
   updateBookingComment
 } from "./api-client";
 
@@ -32,7 +27,6 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 const STORAGE_KEY = "vanlife-current-user-id";
-const IS_DEV = import.meta.env.DEV;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 function renameFileToJpeg(name: string): string {
@@ -198,16 +192,6 @@ export default function App() {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isResetting, setIsResetting] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-  const [devMessage, setDevMessage] = useState<string>("");
-  const [devTargetUserId, setDevTargetUserId] = useState<string>("");
-  const [devPushTitle, setDevPushTitle] = useState<string>("🔔 Notification de test");
-  const [devPushBody, setDevPushBody] = useState<string>("Ceci est un test de notification push");
-  const [isSendingDevPush, setIsSendingDevPush] = useState(false);
-  const [pushSubscriptionsView, setPushSubscriptionsView] = useState<DevPushSubscriptionView[]>([]);
-  const [isLoadingPushSubscriptions, setIsLoadingPushSubscriptions] = useState(false);
-  const [hasLoadedPushSubscriptions, setHasLoadedPushSubscriptions] = useState(false);
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
   const [bookingPageId, setBookingPageId] = useState<string | null>(
     () => new URLSearchParams(window.location.search).get('booking')
@@ -235,7 +219,6 @@ export default function App() {
   const lightboxTouchStartX = useRef(0);
   const [collapsedSections, setCollapsedSections] = useState({
     calendar: false,
-    devTools: false,
     upcomingBookings: false,
     pastBookings: false,
     album: false
@@ -311,11 +294,6 @@ export default function App() {
         .filter((booking) => booking.endDate < todayKey)
         .sort((left, right) => right.endDate.localeCompare(left.endDate)),
     [bookings, todayKey]
-  );
-
-  const targetPushSubscriptionsCount = useMemo(
-    () => pushSubscriptionsView.filter((subscription) => subscription.userId === devTargetUserId).length,
-    [pushSubscriptionsView, devTargetUserId]
   );
 
   async function submitBooking(event: FormEvent) {
@@ -473,122 +451,6 @@ export default function App() {
     setRangeStart(null);
     setRangeEnd(null);
     setError("");
-  }
-
-  async function resetDevData() {
-    const confirmed = window.confirm(
-      "Réinitialiser les données de dev ? Cela supprime toutes les réservations et les photos uploadées."
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setIsResetting(true);
-    setDevMessage("");
-
-    try {
-      const payload = await resetDevDataRequest(API_URL);
-      setRangeStart(null);
-      setRangeEnd(null);
-      setActiveBooking(null);
-      await refreshData();
-      setDevMessage(`Réinitialisation effectuée: ${payload.removedBookings} réservations, ${payload.removedFiles} photos supprimées.`);
-    } catch (error) {
-      setDevMessage(error instanceof ApiClientError ? error.message : "Impossible de réinitialiser les données.");
-    } finally {
-      setIsResetting(false);
-    }
-  }
-
-  async function seedDevData() {
-    setIsSeeding(true);
-    setDevMessage("");
-
-    try {
-      const payload = await seedDevDataRequest(API_URL);
-      setRangeStart(null);
-      setRangeEnd(null);
-      setActiveBooking(null);
-      await refreshData();
-      setDevMessage(`Base peuplée : ${payload.addedBookings} réservations ajoutées.`);
-    } catch (error) {
-      setDevMessage(error instanceof ApiClientError ? error.message : "Impossible de peupler les données.");
-    } finally {
-      setIsSeeding(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!users.length) {
-      return;
-    }
-
-    if (devTargetUserId && users.some((user) => user.id === devTargetUserId)) {
-      return;
-    }
-
-    const fallback = users.find((user) => user.id === currentUserId)?.id ?? users[0].id;
-    setDevTargetUserId(fallback);
-  }, [users, currentUserId, devTargetUserId]);
-
-  async function sendDevPushTest() {
-    if (!devTargetUserId) {
-      setDevMessage("Sélectionne un utilisateur cible pour le test");
-      return;
-    }
-
-    setIsSendingDevPush(true);
-    setDevMessage("");
-
-    try {
-      const subscriptions = await fetchDevPushSubscriptions(API_URL);
-      setPushSubscriptionsView(subscriptions);
-      setHasLoadedPushSubscriptions(true);
-
-      const targetHasSubscription = subscriptions.some((subscription) => subscription.userId === devTargetUserId);
-      if (!targetHasSubscription) {
-        const subscribedUserIds = [...new Set(subscriptions.map((subscription) => subscription.userId))];
-        const subscribedUserNames = users
-          .filter((user) => subscribedUserIds.includes(user.id))
-          .map((user) => user.name);
-
-        setDevMessage(
-          subscribedUserNames.length > 0
-            ? `Aucun appareil abonné pour la cible. Utilisateurs abonnés: ${subscribedUserNames.join(", ")}`
-            : "Aucun appareil abonné. Active d'abord les notifications sur le navigateur cible."
-        );
-        return;
-      }
-
-      const message = await sendDevPushTestRequest(API_URL, {
-        targetUserId: devTargetUserId,
-        fromUserId: currentUserId || undefined,
-        title: devPushTitle,
-        body: devPushBody
-      });
-      setDevMessage(message);
-    } catch (error) {
-      setDevMessage(error instanceof ApiClientError ? error.message : "Erreur réseau lors de l'envoi de la notification de test");
-    } finally {
-      setIsSendingDevPush(false);
-    }
-  }
-
-  async function loadPushSubscriptions() {
-    setIsLoadingPushSubscriptions(true);
-    setDevMessage("");
-
-    try {
-      const payload = await fetchDevPushSubscriptions(API_URL);
-      setPushSubscriptionsView(payload);
-      setHasLoadedPushSubscriptions(true);
-      setDevMessage(`Abonnements push actifs: ${payload.length}`);
-    } catch (error) {
-      setDevMessage(error instanceof ApiClientError ? error.message : "Erreur réseau lors de la lecture des abonnements push");
-    } finally {
-      setIsLoadingPushSubscriptions(false);
-    }
   }
 
   useEffect(() => {
@@ -1245,79 +1107,6 @@ export default function App() {
           </section>
 
           <div className="side-column">
-            {IS_DEV && (
-              <section className={`card dev-tools ${collapsedSections.devTools ? "is-collapsed" : ""}`}>
-                <div className="section-header">
-                  <h2>Outils dev</h2>
-                  <button
-                    type="button"
-                    className="section-toggle"
-                    onClick={() => toggleSection("devTools")}
-                    aria-expanded={!collapsedSections.devTools}
-                    aria-label={collapsedSections.devTools ? "Déplier" : "Réduire"}
-                  />
-                </div>
-                {!collapsedSections.devTools && (
-                  <>
-                    <button type="button" className="danger-button" onClick={resetDevData} disabled={isResetting || isSeeding}>
-                      {isResetting ? "Réinitialisation..." : "Vider la base"}
-                    </button>
-                    <button type="button" className="secondary-button" onClick={() => void seedDevData()} disabled={isSeeding || isResetting}>
-                      {isSeeding ? "Peuplement..." : "Peupler la base"}
-                    </button>
-                    <label>
-                      Utilisateur cible (push test)
-                      <select value={devTargetUserId} onChange={(event) => setDevTargetUserId(event.target.value)}>
-                        {users.map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <p className="dev-message">
-                      {!hasLoadedPushSubscriptions && "Statut cible: inconnu (clique "}
-                      {!hasLoadedPushSubscriptions && <strong>"Lister les abonnements push"</strong>}
-                      {!hasLoadedPushSubscriptions && ")"}
-                      {hasLoadedPushSubscriptions &&
-                        targetPushSubscriptionsCount > 0 &&
-                        `Statut cible: ✅ abonné (${targetPushSubscriptionsCount})`}
-                      {hasLoadedPushSubscriptions && targetPushSubscriptionsCount === 0 && "Statut cible: ❌ non abonné"}
-                    </p>
-                    <label>
-                      Titre notification
-                      <input value={devPushTitle} onChange={(event) => setDevPushTitle(event.target.value)} />
-                    </label>
-                    <label>
-                      Message notification
-                      <input value={devPushBody} onChange={(event) => setDevPushBody(event.target.value)} />
-                    </label>
-                    <button type="button" onClick={() => void sendDevPushTest()} disabled={isSendingDevPush || !devTargetUserId}>
-                      {isSendingDevPush ? "Envoi..." : "Envoyer une notif test"}
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => void loadPushSubscriptions()}
-                      disabled={isLoadingPushSubscriptions}
-                    >
-                      {isLoadingPushSubscriptions ? "Chargement..." : "Lister les abonnements push"}
-                    </button>
-                    {pushSubscriptionsView.length > 0 && (
-                      <div>
-                        {pushSubscriptionsView.map((subscription) => (
-                          <p key={subscription.id} className="dev-message">
-                            {subscription.userId} · {subscription.endpoint.slice(0, 60)}...
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    {devMessage && <p className="dev-message">{devMessage}</p>}
-                  </>
-                )}
-              </section>
-            )}
-
             <section className={`card ${collapsedSections.upcomingBookings ? "is-collapsed" : ""}`}>
               <div className="section-header">
                 <h2>Réservations à venir <span className="section-count">{upcomingBookings.length}</span></h2>

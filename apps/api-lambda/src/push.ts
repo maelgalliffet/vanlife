@@ -86,7 +86,7 @@ export async function sendPushToUsers(
     db: Database,
     userIds: string[],
     payload: PushPayload,
-    options?: { excludedEndpoints?: string[] }
+    options?: { excludedEndpoints?: string[]; excludedUserEndpoints?: Map<string, string> }
 ): Promise<{ removedSubscriptionIds: string[]; attempted: number; delivered: number; failed: number }> {
     if (!notificationsEnabled || userIds.length === 0) {
         return { removedSubscriptionIds: [], attempted: 0, delivered: 0, failed: 0 };
@@ -94,8 +94,22 @@ export async function sendPushToUsers(
 
     const targetUserIds = new Set(userIds);
     const excludedEndpoints = new Set(options?.excludedEndpoints ?? []);
+    const excludedUserEndpoints = options?.excludedUserEndpoints ?? new Map();
     const records = db.pushSubscriptions.filter(
-        (subscription) => targetUserIds.has(subscription.userId) && !excludedEndpoints.has(subscription.endpoint)
+        (subscription) => {
+            if (!targetUserIds.has(subscription.userId)) {
+                return false;
+            }
+            // Exclude if endpoint is in the global excludedEndpoints list
+            if (excludedEndpoints.has(subscription.endpoint)) {
+                return false;
+            }
+            // Exclude if this specific (userId, endpoint) pair is excluded
+            if (excludedUserEndpoints.get(subscription.userId) === subscription.endpoint) {
+                return false;
+            }
+            return true;
+        }
     );
 
     const removedSubscriptionIds: string[] = [];
