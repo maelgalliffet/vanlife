@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Réservations Van</string>
+    <string name="title_activity_main">Réservations Van</string>
+    <string name="package_name">fr.galliffet.vanlife</string>
+    <string name="custom_url_scheme">fr.galliffet.vanlife</string>
+</resources>

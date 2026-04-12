@@ -8,3 +8,9 @@ apps/api/data/db.json
 .terraform/
 terraform.tfstate*
 *.tfvars
+
+# Android build artifacts (géré par apps/web/android/.gitignore)
+apps/web/android/.gradle/
+apps/web/android/build/
+apps/web/android/app/build/
+apps/web/android/local.properties

@@ -20,14 +20,17 @@ import {
 } from "./api-client";
 
 // Construire l'API URL de manière dynamique à l'exécution
-// En production, utiliser VITE_API_URL variable d'environnement
+// En production web, utiliser VITE_API_URL variable d'environnement ou le proxy CloudFront
 // En développement, utiliser localhost:4000
+// En APK Android (Capacitor), utiliser l'URL absolue CloudFront définie à la compilation
 const getApiUrl = () => {
   // Si on est en dev (Vite dev server)
   if (import.meta.env.DEV) {
     return "http://localhost:4000";
   }
-  // En production, utiliser CloudFront /prod/api proxy (même domaine = pas de CORS)
+  // En production (web ou APK), utiliser VITE_API_URL si défini
+  // Pour l'APK Android, VITE_API_URL doit être l'URL absolue CloudFront (ex: https://vanlife.galliffet.fr/prod/api)
+  // Pour le web, fallback sur le proxy CloudFront même domaine
   return import.meta.env.VITE_API_URL || "/prod/api";
 };
 

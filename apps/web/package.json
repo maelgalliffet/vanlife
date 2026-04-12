@@ -6,10 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "build:android": "VITE_API_URL=https://vanlife.galliffet.fr/prod/api vite build && npx cap sync android",
     "preview": "vite preview",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
     "react": "^18.3.1",
     "react-calendar": "^5.0.0",
     "react-dom": "^18.3.1"

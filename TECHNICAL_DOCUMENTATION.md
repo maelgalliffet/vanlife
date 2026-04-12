@@ -58,3 +58,65 @@ Ce document couvre uniquement les fichiers TypeScript/TSX du projet.
 - `apps/web/vite.config.ts`
   - Configuration Vite du frontend.
   - Active le plugin React pour le build/dev server.
+
+## Application Android (`apps/web/android`)
+
+L'application Android est générée par **Capacitor** (Ionic), qui encapsule l'application web React dans une WebView native Android. L'interface et l'infrastructure restent identiques.
+
+### Comment ça fonctionne
+
+- Capacitor wrappe le build web (`apps/web/dist`) dans un projet Android natif.
+- La WebView charge les fichiers locaux et appelle l'API CloudFront via HTTPS (`https://vanlife.galliffet.fr/prod/api`).
+- L'API est configurée avec `cors: "*"`, donc elle accepte les requêtes depuis la WebView Android.
+
+### Générer l'APK
+
+#### Prérequis
+- Java 21+
+- Android SDK (API 34+)
+- Node.js 22+
+
+#### Build local
+
+```bash
+# 1. Installer les dépendances
+npm install
+
+# 2. Builder le web et synchroniser avec Android
+npm run build:android
+
+# 3. Configurer le SDK Android
+echo "sdk.dir=$ANDROID_SDK_ROOT" > apps/web/android/local.properties
+
+# 4. Builder l'APK debug
+cd apps/web/android && ./gradlew assembleDebug
+```
+
+L'APK se trouve dans `apps/web/android/app/build/outputs/apk/debug/app-debug.apk`.
+
+#### Build automatique (GitHub Actions)
+
+Le workflow `.github/workflows/build-android.yml` se déclenche automatiquement à chaque push sur `main` et publie l'APK en tant qu'artefact GitHub Actions (disponible 30 jours).
+
+Pour télécharger l'APK :
+1. Aller dans l'onglet **Actions** du dépôt GitHub
+2. Sélectionner le dernier run **Build Android APK**
+3. Télécharger l'artefact **vanlife-android-debug**
+
+### Structure du projet Android
+
+| Fichier/Dossier | Rôle |
+|---|---|
+| `apps/web/android/` | Projet Android natif généré par Capacitor |
+| `apps/web/android/app/src/main/java/` | Activité principale Android (MainActivity) |
+| `apps/web/android/app/src/main/AndroidManifest.xml` | Manifeste Android (permissions, activité) |
+| `apps/web/android/variables.gradle` | Versions SDK Android et dépendances |
+| `apps/web/capacitor.config.ts` | Configuration Capacitor |
+| `apps/web/public/manifest.json` | PWA manifest (icônes, nom, thème) |
+| `apps/web/public/icons/` | Icônes de l'application (192x192, 512x512) |
+
+## Fichiers TypeScript de tooling front (ajouts)
+
+- `apps/web/capacitor.config.ts`
+  - Configuration Capacitor pour le packaging Android.
+  - Définit l'ID (`fr.galliffet.vanlife`), le nom de l'app, le répertoire web (`dist`) et les options Android.
