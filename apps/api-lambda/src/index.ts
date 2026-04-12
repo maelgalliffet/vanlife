@@ -9,10 +9,20 @@ import {
   uploadFileToS3,
   deleteFileFromS3,
   Booking,
+  normalizeBooking,
   UploadTooLargeError,
   isLocalStorage,
-  LOCAL_UPLOADS_DIR
+  LOCAL_UPLOADS_DIR,
+  Database
 } from "./s3-db.js";
+import {
+  pickSubscribedUserIds,
+  removeSubscriptionsById,
+  sendPushToUsers,
+  uniqueUserIds,
+} from "./push.js";
+import { registerPushRoutes } from "./push-routes.js";
+import { registerBookingInteractionRoutes } from "./booking-interactions-routes.js";
 
 const app = express();
 const router = Router();
@@ -46,16 +56,6 @@ function getDateKeysBetween(startDateStr: string, endDateStr: string): string[] 
   return keys;
 }
 
-function normalizeBooking(booking: any): Booking {
-  const normalizedType = booking.type === "tentative" ? "provisional" : booking.type;
-  return {
-    ...booking,
-    type: normalizedType,
-    reactions: booking.reactions ?? {},
-    comments: booking.comments ?? []
-  };
-}
-
 function parseRemovePhotoUrls(value: string | undefined): string[] {
   if (!value) return [];
   try {
@@ -64,6 +64,65 @@ function parseRemovePhotoUrls(value: string | undefined): string[] {
   } catch {
     return [];
   }
+}
+
+function getTodayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getDefaultBookingTitle(startDate: string, endDate: string): string {
+  return `${startDate} -> ${endDate}`;
+}
+
+function resolveBookingTitle(startDate: string, endDate: string, title: string | undefined): string {
+  const normalized = (title ?? "").trim();
+  if (normalized.length > 0) {
+    return normalized;
+  }
+  return getDefaultBookingTitle(startDate, endDate);
+}
+
+function isPublishedBooking(booking: Booking): boolean {
+  return booking.endDate < getTodayKey();
+}
+
+async function notifyUsers(db: Database, userIds: string[], payload: { title: string; body: string; url?: string; tag?: string }) {
+  const { removedSubscriptionIds } = await sendPushToUsers(db, uniqueUserIds(userIds), payload);
+  if (removedSubscriptionIds.length > 0) {
+    removeSubscriptionsById(db, removedSubscriptionIds);
+    await writeDb(db);
+  }
+}
+
+async function notifyNewPublicationsIfNeeded(db: Database): Promise<void> {
+  const allUserIds = db.users.map((user) => user.id);
+  if (allUserIds.length === 0) {
+    return;
+  }
+
+  const toPublish = db.bookings
+    .map(normalizeBooking)
+    .filter((booking) => isPublishedBooking(booking) && !booking.publishedNotificationSentAt);
+
+  if (toPublish.length === 0) {
+    return;
+  }
+
+  for (const booking of toPublish) {
+    await notifyUsers(db, allUserIds, {
+      title: "📣 Réservation publiée",
+      body: `${booking.userName} · ${booking.startDate}${booking.startDate === booking.endDate ? "" : ` → ${booking.endDate}`}`,
+      url: "/",
+      tag: `publication-${booking.id}`
+    });
+
+    const target = db.bookings.find((item) => item.id === booking.id);
+    if (target) {
+      target.publishedNotificationSentAt = new Date().toISOString();
+    }
+  }
+
+  await writeDb(db);
 }
 
 type BookingType = "provisional" | "definitive";
@@ -86,6 +145,7 @@ router.get("/users", async (_req, res) => {
 router.get("/bookings", async (req, res) => {
   try {
     const db = await readDb();
+    await notifyNewPublicationsIfNeeded(db);
     const dateKey = typeof req.query.dateKey === "string" ? req.query.dateKey : null;
 
     const normalized = db.bookings.map(normalizeBooking);
@@ -103,6 +163,7 @@ router.get("/bookings", async (req, res) => {
 router.get("/photos", async (_req, res) => {
   try {
     const db = await readDb();
+    await notifyNewPublicationsIfNeeded(db);
     const photos: any[] = [];
 
     db.bookings.forEach((booking) => {
@@ -127,6 +188,252 @@ router.get("/photos", async (_req, res) => {
   }
 });
 
+registerPushRoutes(router);
+
+router.post("/dev/reset", async (_req, res) => {
+  try {
+    if (!isLocalStorage && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ message: "Route disponible uniquement en dev" });
+    }
+
+    const db = await readDb();
+    let removedFiles = 0;
+
+    for (const booking of db.bookings) {
+      for (const photoUrl of booking.photoUrls) {
+        await deleteFileFromS3(photoUrl);
+        removedFiles++;
+      }
+    }
+
+    const removedBookings = db.bookings.length;
+    db.bookings = [];
+    await writeDb(db);
+
+    return res.json({ removedBookings, removedFiles });
+  } catch (error) {
+    console.error("Error resetting dev data:", error);
+    return res.status(500).json({ message: "Erreur lors de la réinitialisation" });
+  }
+});
+
+router.post("/dev/seed", async (_req, res) => {
+  try {
+    if (!isLocalStorage && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ message: "Route disponible uniquement en dev" });
+    }
+
+    const db = await readDb();
+
+    // Vider les réservations existantes avant de peupler
+    for (const booking of db.bookings) {
+      for (const photoUrl of booking.photoUrls) {
+        await deleteFileFromS3(photoUrl);
+      }
+    }
+    db.bookings = [];
+
+    function addDays(base: Date, days: number): string {
+      const d = new Date(base);
+      d.setUTCDate(d.getUTCDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function dateRange(start: string, end: string): string[] {
+      const keys: string[] = [];
+      const d = new Date(start + "T00:00:00Z");
+      const endD = new Date(end + "T00:00:00Z");
+      while (d <= endD) {
+        keys.push(d.toISOString().slice(0, 10));
+        d.setUTCDate(d.getUTCDate() + 1);
+      }
+      return keys;
+    }
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    function booking(
+      id: string,
+      userId: string,
+      userName: string,
+      type: "provisional" | "definitive",
+      startOffset: number,
+      endOffset: number,
+      note: string,
+      createdOffset: number,
+      reactions: Record<string, string> = {},
+      comments: Booking["comments"] = [],
+      publishedOffset?: number
+    ): Booking {
+      const start = addDays(today, startOffset);
+      const end = addDays(today, endOffset);
+      const keys = dateRange(start, end);
+      return {
+        id,
+        weekendKey: keys[0],
+        startDate: keys[0],
+        endDate: keys[keys.length - 1],
+        dateKeys: keys,
+        userId,
+        userName,
+        type,
+        note,
+        photoUrls: [],
+        createdAt: addDays(today, createdOffset) + "T10:00:00.000Z",
+        reactions,
+        comments,
+        ...(publishedOffset !== undefined && {
+          publishedNotificationSentAt: addDays(today, publishedOffset) + "T09:00:00.000Z"
+        })
+      };
+    }
+
+    const seedBookings: Booking[] = [
+      booking(
+        "seed-mael-ski", "mael", "Maël/Salma", "definitive",
+        -75, -73, "Sortie ski en famille (Chamrousse).", -80,
+        { ivan: "⛷️", lena: "❄️" },
+        [{ id: "seed-cmt1", userId: "ivan", userName: "Ivan/Isa", text: "Pensez aux chaînes, la météo annonce de la neige.", createdAt: addDays(today, -79) + "T11:04:00.000Z" }],
+        -73
+      ),
+      booking(
+        "seed-ivan-plage", "ivan", "Ivan/Isa", "definitive",
+        -45, -42, "Week-end plage à Arcachon. Retour lundi.", -50,
+        { mael: "🌊", lena: "🏖️" },
+        [{ id: "seed-cmt2", userId: "lena", userName: "Lena/Lucas", text: "Les enfants adorent les dunes !", createdAt: addDays(today, -49) + "T18:30:00.000Z" }],
+        -42
+      ),
+      booking(
+        "seed-lena-vercors", "lena", "Lena/Lucas", "definitive",
+        -20, -19, "Rando dans le Vercors, nuit au refuge.", -25,
+        { mael: "🥾", ivan: "🏔️" },
+        [],
+        -19
+      ),
+      booking(
+        "seed-mael-courses", "mael", "Maël/Salma", "provisional",
+        12, 12, "Journée van pour courses + nettoyage.", 8,
+        { lena: "🧹" },
+        []
+      ),
+      booking(
+        "seed-lena-surf", "lena", "Lena/Lucas", "definitive",
+        25, 27, "Week-end surf côte basque. Départ vendredi 18h.", 18,
+        { ivan: "🏄", mael: "🔥" },
+        []
+      ),
+      booking(
+        "seed-ivan-roadtrip", "ivan", "Ivan/Isa", "provisional",
+        45, 47, "Road trip Provence, à confirmer selon dispo.", 35,
+        { mael: "🌿" },
+        []
+      ),
+      booking(
+        "seed-ivan-vacances", "ivan", "Ivan/Isa", "definitive",
+        85, 93, "Vacances été – Tour Bretagne nord.", 60,
+        { mael: "🚐", lena: "🌞" },
+        [{ id: "seed-cmt3", userId: "lena", userName: "Lena/Lucas", text: "Top, pensez à prendre le barbecue pliant.", createdAt: addDays(today, -59) + "T19:25:00.000Z" }]
+      ),
+    ];
+
+    db.bookings = seedBookings;
+    await writeDb(db);
+
+    return res.json({ addedBookings: seedBookings.length });
+  } catch (error) {
+    console.error("Error seeding dev data:", error);
+    return res.status(500).json({ message: "Erreur lors du peuplement des données" });
+  }
+});
+
+router.post("/dev/push-test", async (req, res) => {
+  try {
+    if (!isLocalStorage && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ message: "Route disponible uniquement en dev" });
+    }
+
+    const { targetUserId, fromUserId, title, body } = req.body as {
+      targetUserId?: string;
+      fromUserId?: string;
+      title?: string;
+      body?: string;
+    };
+
+    if (!targetUserId) {
+      return res.status(400).json({ message: "targetUserId est requis" });
+    }
+
+    const db = await readDb();
+    const targetUser = db.users.find((user) => user.id === targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "Utilisateur cible introuvable" });
+    }
+
+    const senderName =
+      db.users.find((user) => user.id === fromUserId)?.name ?? "Système";
+
+    const { removedSubscriptionIds, attempted, delivered, failed } = await sendPushToUsers(db, [targetUserId], {
+      title: title?.trim() || "🔔 Notification de test",
+      body: body?.trim() || `Message envoyé par ${senderName}`,
+      url: "/",
+      tag: `dev-push-test-${targetUserId}-${Date.now()}`
+    });
+
+    if (removedSubscriptionIds.length > 0) {
+      removeSubscriptionsById(db, removedSubscriptionIds);
+      await writeDb(db);
+    }
+
+    if (attempted === 0) {
+      return res.status(409).json({
+        message: "Aucun appareil abonné pour cet utilisateur. Active d'abord les notifications sur le navigateur cible."
+      });
+    }
+
+    if (delivered === 0 && failed > 0) {
+      return res.status(502).json({
+        message:
+          "Échec d'envoi push. Vérifie la paire VAPID (publique/privée) et réactive les notifications sur le navigateur.",
+        attempted,
+        failed
+      });
+    }
+
+    return res.status(200).json({
+      message: `Notification envoyée à ${targetUser.name}`,
+      attempted,
+      delivered,
+      failed
+    });
+  } catch (error) {
+    console.error("Error sending dev push test:", error);
+    return res.status(500).json({ message: "Erreur lors de l'envoi de la notification de test" });
+  }
+});
+
+router.get("/dev/push-subscriptions", async (_req, res) => {
+  try {
+    if (!isLocalStorage && process.env.NODE_ENV === "production") {
+      return res.status(403).json({ message: "Route disponible uniquement en dev" });
+    }
+
+    const db = await readDb();
+    return res.json(
+      db.pushSubscriptions.map((subscription) => ({
+        id: subscription.id,
+        userId: subscription.userId,
+        endpoint: subscription.endpoint,
+        createdAt: subscription.createdAt,
+        updatedAt: subscription.updatedAt
+      }))
+    );
+  } catch (error) {
+    console.error("Error listing push subscriptions:", error);
+    return res.status(500).json({ message: "Erreur lors de la lecture des abonnements push" });
+  }
+});
+
 router.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{ type: BookingType }>, res) => {
   try {
     const type = req.params.type;
@@ -134,12 +441,13 @@ router.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{
       return res.status(400).json({ message: "Invalid booking type" });
     }
 
-    const { date, startDate, endDate, userId, note } = req.body as {
+    const { date, startDate, endDate, userId, note, title } = req.body as {
       date?: string;
       startDate?: string;
       endDate?: string;
       userId?: string;
       note?: string;
+      title?: string;
     };
 
     const effectiveStart = startDate ?? date;
@@ -193,6 +501,7 @@ router.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{
       userId,
       userName: user.name,
       type,
+      title: resolveBookingTitle(dateKeys[0], dateKeys[dateKeys.length - 1], title),
       note: note ?? "",
       photoUrls,
       createdAt: new Date().toISOString(),
@@ -202,6 +511,14 @@ router.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{
 
     db.bookings.push(booking);
     await writeDb(db);
+
+    const recipients = pickSubscribedUserIds(db).filter((id) => id !== userId);
+    await notifyUsers(db, recipients, {
+      title: "🗓️ Nouvelle réservation",
+      body: `${user.name} a effectué une nouvelle réservation : ${booking.title}`,
+      url: "/",
+      tag: `booking-created-${booking.id}`
+    });
 
     return res.status(201).json(booking);
   } catch (error) {
@@ -228,9 +545,16 @@ router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id
       startDate?: string;
       endDate?: string;
       note?: string;
+      title?: string;
       type?: BookingType;
       removePhotoUrls?: string;
+      requesterUserId?: string;
     };
+
+    const requesterUserId =
+      typeof req.query.requesterUserId === "string"
+        ? req.query.requesterUserId
+        : payload.requesterUserId ?? currentBooking.userId;
 
     const nextType = payload.type ?? currentBooking.type;
     if (nextType !== "provisional" && nextType !== "definitive") {
@@ -281,6 +605,7 @@ router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id
     const updatedBooking: Booking = {
       ...currentBooking,
       type: nextType,
+      title: resolveBookingTitle(nextDateKeys[0], nextDateKeys[nextDateKeys.length - 1], payload.title ?? currentBooking.title),
       note: payload.note ?? currentBooking.note,
       startDate: nextDateKeys[0],
       endDate: nextDateKeys[nextDateKeys.length - 1],
@@ -291,6 +616,16 @@ router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id
 
     db.bookings[index] = updatedBooking;
     await writeDb(db);
+
+    if (addedPhotoUrls.length > 0 && isPublishedBooking(updatedBooking)) {
+      const recipients = db.users.map((user) => user.id).filter((id) => id !== requesterUserId);
+      await notifyUsers(db, recipients, {
+        title: "🖼️ Nouvelle photo",
+        body: `${updatedBooking.userName} a rajouté une nouvelle photo : ${updatedBooking.title}`,
+        url: "/",
+        tag: `publication-photo-${updatedBooking.id}`
+      });
+    }
 
     return res.json(updatedBooking);
   } catch (error) {
@@ -342,191 +677,15 @@ router.delete("/bookings/:id", async (req: Request<{ id: string }>, res) => {
   }
 });
 
-// Reaction routes
-router.post("/bookings/:id/reactions", async (req: Request<{ id: string }>, res) => {
-  try {
-    const bookingId = req.params.id;
-    const { userId, emoji } = req.body as { userId?: string; emoji?: string };
-
-    if (!userId || !emoji) {
-      return res.status(400).json({ message: "userId and emoji are required" });
-    }
-
-    const db = await readDb();
-    const booking = db.bookings.find((booking) => booking.id === bookingId);
-
-    if (!booking) {
-      return res.status(404).json({ message: "Réservation introuvable" });
-    }
-
-    const normalized = normalizeBooking(booking);
-    normalized.reactions[userId] = emoji;
-
-    Object.assign(booking, normalized);
-    await writeDb(db);
-
-    return res.json(normalized);
-  } catch (error) {
-    console.error("Error adding reaction:", error);
-    return res.status(500).json({ message: "Error adding reaction" });
-  }
+registerBookingInteractionRoutes(router, {
+  normalizeBooking,
+  isPublishedBooking,
+  notifyUsers
 });
 
-router.delete("/bookings/:id/reactions/:userId", async (req: Request<{ id: string; userId: string }>, res) => {
-  try {
-    const { id: bookingId, userId } = req.params;
-
-    const db = await readDb();
-    const booking = db.bookings.find((booking) => booking.id === bookingId);
-
-    if (!booking) {
-      return res.status(404).json({ message: "Réservation introuvable" });
-    }
-
-    const normalized = normalizeBooking(booking);
-    delete normalized.reactions[userId];
-
-    Object.assign(booking, normalized);
-    await writeDb(db);
-
-    return res.json(normalized);
-  } catch (error) {
-    console.error("Error removing reaction:", error);
-    return res.status(500).json({ message: "Error removing reaction" });
-  }
-});
-
-// Comment routes
-router.post("/bookings/:id/comments", async (req: Request<{ id: string }>, res) => {
-  try {
-    const bookingId = req.params.id;
-    const { userId, text } = req.body as { userId?: string; text?: string };
-
-    if (!userId || !text) {
-      return res.status(400).json({ message: "userId and text are required" });
-    }
-
-    const db = await readDb();
-    const booking = db.bookings.find((booking) => booking.id === bookingId);
-
-    if (!booking) {
-      return res.status(404).json({ message: "Réservation introuvable" });
-    }
-
-    const user = db.users.find((u) => u.id === userId);
-    if (!user) {
-      return res.status(404).json({ message: "Unknown user" });
-    }
-
-    const normalized = normalizeBooking(booking);
-    const comment = {
-      id: uuidv4(),
-      userId,
-      userName: user.name,
-      text,
-      createdAt: new Date().toISOString()
-    };
-
-    normalized.comments.push(comment);
-
-    Object.assign(booking, normalized);
-    await writeDb(db);
-
-    return res.status(201).json(comment);
-  } catch (error) {
-    console.error("Error adding comment:", error);
-    return res.status(500).json({ message: "Error adding comment" });
-  }
-});
-
-// Modify comment
-router.patch("/bookings/:bookingId/comments/:commentId", async (req: Request<{ bookingId: string; commentId: string }>, res) => {
-  try {
-    const { bookingId, commentId } = req.params;
-    const { userId, text } = req.body as { userId?: string; text?: string };
-    const requesterUserId =
-      typeof req.query.requesterUserId === "string"
-        ? req.query.requesterUserId
-        : ((req.body as { requesterUserId?: string } | undefined)?.requesterUserId ?? userId ?? "");
-
-    if (!requesterUserId || !text) {
-      return res.status(400).json({ message: "requesterUserId and text are required" });
-    }
-
-    const db = await readDb();
-    const booking = db.bookings.find((booking) => booking.id === bookingId);
-
-    if (!booking) {
-      return res.status(404).json({ message: "Réservation introuvable" });
-    }
-
-    const normalized = normalizeBooking(booking);
-    const comment = normalized.comments.find((comment) => comment.id === commentId);
-
-    if (!comment) {
-      return res.status(404).json({ message: "Comment not found" });
-    }
-
-    if (comment.userId !== requesterUserId) {
-      return res.status(403).json({ message: "Vous ne pouvez modifier que vos propres commentaires" });
-    }
-
-    comment.text = text;
-    comment.updatedAt = new Date().toISOString();
-
-    Object.assign(booking, normalized);
-    await writeDb(db);
-
-    return res.status(200).json(comment);
-  } catch (error) {
-    console.error("Error updating comment:", error);
-    return res.status(500).json({ message: "Error updating comment" });
-  }
-});
-
-// Delete comment
-router.delete("/bookings/:bookingId/comments/:commentId", async (req: Request<{ bookingId: string; commentId: string }>, res) => {
-  try {
-    const { bookingId, commentId } = req.params;
-    const requesterUserId =
-      typeof req.query.requesterUserId === "string"
-        ? req.query.requesterUserId
-        : ((req.body as { requesterUserId?: string } | undefined)?.requesterUserId ?? "");
-
-    if (!requesterUserId) {
-      return res.status(400).json({ message: "requesterUserId is required" });
-    }
-
-    const db = await readDb();
-    const booking = db.bookings.find((booking) => booking.id === bookingId);
-
-    if (!booking) {
-      return res.status(404).json({ message: "Réservation introuvable" });
-    }
-
-    const normalized = normalizeBooking(booking);
-    const commentIndex = normalized.comments.findIndex((comment) => comment.id === commentId);
-
-    if (commentIndex === -1) {
-      return res.status(404).json({ message: "Comment not found" });
-    }
-
-    const comment = normalized.comments[commentIndex];
-    if (comment.userId !== requesterUserId) {
-      return res.status(403).json({ message: "Vous ne pouvez supprimer que vos propres commentaires" });
-    }
-
-    normalized.comments.splice(commentIndex, 1);
-
-    Object.assign(booking, normalized);
-    await writeDb(db);
-
-    return res.status(204).send();
-  } catch (error) {
-    console.error("Error deleting comment:", error);
-    return res.status(500).json({ message: "Error deleting comment" });
-  }
-});
+// Local mode uses root paths, production mode is proxied through /api.
+app.use(router);
+app.use('/api', router);
 
 // Local mode uses root paths, production mode is proxied through /api.
 app.use(router);

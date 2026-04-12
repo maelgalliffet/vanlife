@@ -23,6 +23,7 @@ export interface Booking {
   userId: string;
   userName: string;
   type: BookingType;
+  title: string;
   note: string;
   photoUrls: string[];
   reactions?: Record<string, string[]>;

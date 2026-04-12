@@ -9,6 +9,7 @@
     "dev": "bash ./scripts/dev.sh",
     "build": "npm run build -w apps/api-lambda && npm run build -w apps/web",
     "deploy:lambda": "bash ./scripts/deploy-lambda.sh",
-    "migrate:lambda": "bash ./scripts/migrate-to-lambda.sh"
+    "migrate:lambda": "bash ./scripts/migrate-to-lambda.sh",
+    "migrate:remote-titles": "bash ./scripts/migrate-remote-booking-titles.sh"
   }
 }

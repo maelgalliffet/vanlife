@@ -2,7 +2,7 @@
 
 ## Stack
 - Backend: Node.js, Typescript, Express
-- Frontend: Vite, React, TypeScript, Tailwind CSS
+- Frontend: Vite, React, TypeScript
 
 ## Déploiement
 - Utiliser des Lambda Functions pour le backend
@@ -20,6 +20,7 @@
 - Utilise des fonctions réutilisables pour éviter la duplication de code
 - Utilise des commentaires pour expliquer les parties complexes du code
 - Utilise des outils de linting et de formatage pour maintenir une codebase propre et cohérente
+- Fais une passe régulière pour refactoriser le code et améliorer sa qualité, et supprimer le code mort ou obsolète.
 
 ## Tests
 - Ecrit des tests d'intégration pour les fonctionnalités principales de l'application
@@ -28,3 +29,6 @@
 
 ## Responsive
 - Assure-toi que le frontend est responsive et fonctionne correctement sur différents appareils et tailles d'écran
+
+## Documentation
+- Met à jour la documentation technique du projet pour refléter les changements que tu apportes au code
