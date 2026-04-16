@@ -148,7 +148,7 @@ export function registerBookingInteractionRoutes(router: Router, deps: RegisterB
 
       await notifyUsers(db, recipients, {
         title: "💬 Nouveau commentaire",
-        body: `${user.name} a commenté votre réservation : ${normalized.title}`,
+        body: `${user.name} a commenté la réservation : ${normalized.title}`,
         url: `/?booking=${normalized.id}`,
         tag: `publication-comment-${normalized.id}`
       }, excludedUserEndpoints ? { excludedUserEndpoints } : undefined);

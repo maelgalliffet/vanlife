@@ -478,7 +478,8 @@ export default function App() {
   }
 
   function navigateBackFromBooking() {
-    window.history.back();
+    window.history.replaceState({}, "", window.location.pathname);
+    setBookingPageId(null);
   }
 
   function openLightbox(urls: string[], index: number) {
@@ -940,7 +941,8 @@ export default function App() {
       {bookingPage ? (
         <main className="booking-page">
           <button type="button" className="back-button" onClick={navigateBackFromBooking}>
-            ← Retour
+            <span className="back-button-arrow" aria-hidden="true">←</span>
+            <span className="back-button-label">Retour</span>
           </button>
           <article className={`post-card ${userThemeClass(bookingPage.userName)}`}>
             <header className="post-header">

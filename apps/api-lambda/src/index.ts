@@ -161,37 +161,6 @@ async function notifyUsers(
   }
 }
 
-async function notifyNewPublicationsIfNeeded(db: Database): Promise<void> {
-  const allUserIds = db.users.map((user) => user.id);
-  if (allUserIds.length === 0) {
-    return;
-  }
-
-  const toPublish = db.bookings
-    .map(normalizeBooking)
-    .filter((booking) => isPublishedBooking(booking) && !booking.publishedNotificationSentAt);
-
-  if (toPublish.length === 0) {
-    return;
-  }
-
-  for (const booking of toPublish) {
-    await notifyUsers(db, allUserIds, {
-      title: "📣 Réservation publiée",
-      body: `${booking.userName} · ${booking.startDate}${booking.startDate === booking.endDate ? "" : ` → ${booking.endDate}`}`,
-      url: `/?booking=${booking.id}`,
-      tag: `publication-${booking.id}`
-    });
-
-    const target = db.bookings.find((item) => item.id === booking.id);
-    if (target) {
-      target.publishedNotificationSentAt = new Date().toISOString();
-    }
-  }
-
-  await writeDb(db);
-}
-
 async function notifyEndedBookingsIfNeeded(db: Database, options?: { timeZone?: string }): Promise<void> {
   const allUserIds = db.users.map((user) => user.id);
   if (allUserIds.length === 0) {
@@ -270,7 +239,6 @@ router.get("/users", async (_req, res) => {
 router.get("/bookings", async (req, res) => {
   try {
     const db = await readDb();
-    await notifyNewPublicationsIfNeeded(db);
     const dateKey = typeof req.query.dateKey === "string" ? req.query.dateKey : null;
 
     const normalized = db.bookings.map(normalizeBooking);
@@ -288,7 +256,6 @@ router.get("/bookings", async (req, res) => {
 router.get("/photos", async (_req, res) => {
   try {
     const db = await readDb();
-    await notifyNewPublicationsIfNeeded(db);
     const photos: any[] = [];
 
     db.bookings.forEach((booking) => {
