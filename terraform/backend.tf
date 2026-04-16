@@ -1,9 +1,8 @@
 terraform {
   backend "s3" {
-    bucket       = "vanlife-terraform-state"
-    key          = "lambda/terraform.tfstate"
-    region       = "eu-west-3"
-    encrypt      = true
-    use_lockfile = true
+    bucket  = "vanlife-terraform-state"
+    key     = "lambda/terraform.tfstate"
+    region  = "eu-west-3"
+    encrypt = true
   }
 }

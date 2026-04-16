@@ -52,7 +52,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.6.0"
+          terraform_version: "1.14.5"
 
       - name: Initialize Terraform backend
         run: bash ./scripts/init-backend.sh
@@ -62,3 +62,5 @@ jobs:
         env:
           AWS_REGION: eu-west-3
           TF_INPUT: false
+          EVENTBRIDGE_API_KEY: ${{ secrets.EVENTBRIDGE_API_KEY }}
+          PUSH_VAPID_PRIVATE_KEY: ${{ secrets.PUSH_VAPID_PRIVATE_KEY }}
