@@ -1,3 +1,78 @@
+const CACHE_NAME = "vanlife-app-shell-v1";
+const APP_SHELL_ASSETS = ["/", "/index.html", "/manifest.webmanifest", "/vanlife_icon.png", "/bg.png"];
+
+async function cacheAppShell() {
+  const cache = await caches.open(CACHE_NAME);
+  await cache.addAll(APP_SHELL_ASSETS);
+}
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(cacheAppShell());
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) =>
+      Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName === CACHE_NAME) {
+            return null;
+          }
+
+          return caches.delete(cacheName);
+        })
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") {
+    return;
+  }
+
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put("/index.html", responseClone));
+          return response;
+        })
+        .catch(async () => {
+          const cachedResponse = await caches.match("/index.html");
+          return cachedResponse ?? caches.match("/");
+        })
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request).then((response) => {
+        if (!response || response.status !== 200 || response.type !== "basic") {
+          return response;
+        }
+
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        return response;
+      });
+    })
+  );
+});
+
 self.addEventListener("push", (event) => {
   if (!event.data) {
     return;
@@ -17,8 +92,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: "/vite.svg",
-      badge: "/vite.svg",
+      icon: "/vanlife_icon.png",
+      badge: "/vanlife_icon.png",
       data: { url },
       tag: payload.tag || undefined,
       renotify: false
