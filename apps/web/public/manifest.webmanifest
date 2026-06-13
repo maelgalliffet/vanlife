@@ -2,6 +2,7 @@
     "name": "Vanlife",
     "short_name": "Vanlife",
     "description": "Réservations et suivi du van.",
+    "id": "/?pwa=vanlife",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
@@ -9,7 +10,13 @@
     "theme_color": "#0f172a",
     "icons": [
         {
-            "src": "/vanlife_icon.png",
+            "src": "/vanlife_icon_192.png?v=4",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/vanlife_icon_512.png?v=4",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"

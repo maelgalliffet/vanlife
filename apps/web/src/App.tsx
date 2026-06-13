@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { Booking, BookingType, PhotoItem, User } from "./types";
+import { Booking, BookingComment, BookingType, PhotoItem, User } from "./types";
 import { usePushNotifications } from "./usePushNotifications";
 import {
   addBookingComment,
@@ -718,15 +718,29 @@ export default function App() {
       return;
     }
 
+    let createdComment: BookingComment;
+
     try {
       const currentEndpoint = await getCurrentPushEndpoint();
-      await addBookingComment(API_URL, bookingId, currentUserId, draft, currentEndpoint ?? undefined);
-    } catch {
+      createdComment = await addBookingComment(API_URL, bookingId, currentUserId, draft, currentEndpoint ?? undefined);
+    } catch (error) {
+      setCommentError(error instanceof ApiClientError ? error.message : "Impossible de publier le commentaire");
       return;
     }
 
+    setCommentError("");
+    setBookings((current) =>
+      current.map((booking) =>
+        booking.id === bookingId
+          ? {
+            ...booking,
+            comments: [...(booking.comments ?? []), createdComment]
+          }
+          : booking
+      )
+    );
     setCommentDrafts((current) => ({ ...current, [bookingId]: "" }));
-    await refreshData();
+    void refreshData();
   }
 
   async function deleteComment(bookingId: string, commentId: string) {

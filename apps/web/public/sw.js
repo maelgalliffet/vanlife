@@ -1,5 +1,15 @@
-const CACHE_NAME = "vanlife-app-shell-v3";
-const APP_SHELL_ASSETS = ["/", "/index.html", "/manifest.webmanifest", "/vanlife_icon.png", "/bg.png"];
+const CACHE_NAME = "vanlife-app-shell-v5";
+const APP_SHELL_ASSETS = [
+  "/",
+  "/index.html",
+  "/manifest.webmanifest",
+  "/manifest.webmanifest?v=4",
+  "/vanlife_icon_192.png",
+  "/vanlife_icon_192.png?v=4",
+  "/vanlife_icon_512.png",
+  "/vanlife_icon_512.png?v=4",
+  "/bg.png"
+];
 
 async function cacheAppShell() {
   const cache = await caches.open(CACHE_NAME);
@@ -35,6 +45,11 @@ self.addEventListener("fetch", (event) => {
 
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  // Never cache API calls: they must always hit network to avoid stale app data.
+  if (requestUrl.pathname.startsWith("/prod/api") || requestUrl.pathname.startsWith("/api")) {
     return;
   }
 
@@ -92,8 +107,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: "/vanlife_icon.png",
-      badge: "/vanlife_icon.png",
+      icon: "/vanlife_icon_192.png?v=4",
+      badge: "/vanlife_icon_192.png?v=4",
       data: { url },
       tag: payload.tag || undefined,
       renotify: false

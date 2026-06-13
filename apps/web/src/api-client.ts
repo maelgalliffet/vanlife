@@ -1,4 +1,4 @@
-import { Booking, PhotoItem, User } from "./types";
+import { Booking, BookingComment, PhotoItem, User } from "./types";
 import { expectOk, parseApiErrorMessage } from "./http-errors";
 
 export class ApiClientError extends Error {
@@ -96,7 +96,7 @@ export async function addBookingComment(
   userId: string,
   text: string,
   currentEndpoint?: string
-): Promise<void> {
+): Promise<BookingComment> {
   const response = await fetch(`${apiUrl}/bookings/${bookingId}/comments`, {
     method: "POST",
     headers: {
@@ -106,6 +106,7 @@ export async function addBookingComment(
   });
 
   await expectApiClientOk(response, "Impossible d'ajouter le commentaire");
+  return (await response.json()) as BookingComment;
 }
 
 export async function updateBookingComment(
