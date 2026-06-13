@@ -1,4 +1,4 @@
-const CACHE_NAME = "vanlife-app-shell-v1";
+const CACHE_NAME = "vanlife-app-shell-v3";
 const APP_SHELL_ASSETS = ["/", "/index.html", "/manifest.webmanifest", "/vanlife_icon.png", "/bg.png"];
 
 async function cacheAppShell() {
