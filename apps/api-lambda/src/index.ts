@@ -83,6 +83,20 @@ function parseRemovePhotoUrls(value: string | undefined): string[] {
   }
 }
 
+async function uploadBookingPhotos(files: Express.Multer.File[]): Promise<string[]> {
+  const photoUrls: string[] = [];
+
+  for (const file of files) {
+    const lastDotIndex = file.originalname.lastIndexOf(".");
+    const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
+    const key = `uploads/${Date.now()}-${uuidv4()}${extension}`;
+    const url = await uploadFileToS3(file, key);
+    photoUrls.push(url);
+  }
+
+  return photoUrls;
+}
+
 function getTodayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -575,15 +589,7 @@ router.post("/bookings/:type", upload.array("photos", 10), async (req: Request<{
     }
 
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
-    const photoUrls: string[] = [];
-
-    for (const file of files) {
-      const lastDotIndex = file.originalname.lastIndexOf(".");
-      const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
-      const key = `uploads/${Date.now()}-${uuidv4()}${extension}`;
-      const url = await uploadFileToS3(file, key);
-      photoUrls.push(url);
-    }
+    const photoUrls = await uploadBookingPhotos(files);
 
     const booking = {
       id: uuidv4(),
@@ -683,15 +689,7 @@ router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id
 
     // Upload new photos
     const uploadedFiles = (req.files as Express.Multer.File[] | undefined) ?? [];
-    const addedPhotoUrls: string[] = [];
-
-    for (const file of uploadedFiles) {
-      const lastDotIndex = file.originalname.lastIndexOf(".");
-      const extension = lastDotIndex > -1 ? file.originalname.substring(lastDotIndex) : "";
-      const key = `uploads/${Date.now()}-${uuidv4()}${extension}`;
-      const url = await uploadFileToS3(file, key);
-      addedPhotoUrls.push(url);
-    }
+    const addedPhotoUrls = await uploadBookingPhotos(uploadedFiles);
 
     const nextPhotoUrls = [...keptPhotoUrls, ...addedPhotoUrls];
 
@@ -727,6 +725,58 @@ router.put("/bookings/:id", upload.array("photos", 10), async (req: Request<{ id
     }
     console.error("Error updating booking:", error);
     return res.status(500).json({ message: "Error updating booking" });
+  }
+});
+
+router.post("/bookings/:id/photos", upload.array("photos", 10), async (req: Request<{ id: string }>, res) => {
+  try {
+    const bookingId = req.params.id;
+    const uploadedFiles = (req.files as Express.Multer.File[] | undefined) ?? [];
+
+    if (uploadedFiles.length === 0) {
+      return res.status(400).json({ message: "Aucune photo à envoyer" });
+    }
+
+    const payload = req.body as { requesterUserId?: string };
+    const db = await readDb();
+    const index = db.bookings.findIndex((booking) => booking.id === bookingId);
+
+    if (index === -1) {
+      return res.status(404).json({ message: "Réservation introuvable" });
+    }
+
+    const currentBooking = normalizeBooking(db.bookings[index]);
+    const requesterUserId =
+      typeof req.query.requesterUserId === "string"
+        ? req.query.requesterUserId
+        : payload.requesterUserId ?? currentBooking.userId;
+
+    const addedPhotoUrls = await uploadBookingPhotos(uploadedFiles);
+    const updatedBooking: Booking = {
+      ...currentBooking,
+      photoUrls: [...currentBooking.photoUrls, ...addedPhotoUrls]
+    };
+
+    db.bookings[index] = updatedBooking;
+    await writeDb(db);
+
+    if (isPublishedBooking(updatedBooking)) {
+      const recipients = db.users.map((user) => user.id).filter((id) => id !== requesterUserId);
+      await notifyUsers(db, recipients, {
+        title: "🖼️ Nouvelle photo",
+        body: `${updatedBooking.userName} a rajouté une nouvelle photo : ${updatedBooking.title}`,
+        url: `/?booking=${updatedBooking.id}`,
+        tag: `publication-photo-${updatedBooking.id}`
+      });
+    }
+
+    return res.json(updatedBooking);
+  } catch (error) {
+    if (error instanceof UploadTooLargeError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    console.error("Error uploading booking photos:", error);
+    return res.status(500).json({ message: "Error uploading booking photos" });
   }
 });
 

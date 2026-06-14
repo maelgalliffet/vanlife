@@ -90,6 +90,28 @@ export async function deleteBooking(apiUrl: string, bookingId: string, requester
   await expectApiClientOk(response, "Impossible de supprimer la réservation");
 }
 
+export async function uploadBookingPhoto(
+  apiUrl: string,
+  bookingId: string,
+  file: File,
+  requesterUserId: string
+): Promise<Booking> {
+  const formData = new FormData();
+  formData.append("photos", file);
+  formData.append("requesterUserId", requesterUserId);
+
+  const response = await fetch(`${apiUrl}/bookings/${bookingId}/photos`, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new ApiClientError(await parseApiErrorMessage(response, "Impossible d'envoyer la photo"));
+  }
+
+  return (await response.json()) as Booking;
+}
+
 export async function addBookingComment(
   apiUrl: string,
   bookingId: string,

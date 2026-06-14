@@ -10,6 +10,7 @@ import {
   deleteBookingComment,
   fetchBookingsAndPhotos,
   fetchUsers,
+  uploadBookingPhoto,
   updateBookingComment
 } from "./api-client";
 
@@ -97,6 +98,34 @@ async function compressImageForUpload(file: File): Promise<File> {
   } finally {
     bitmap.close();
   }
+}
+
+async function prepareFilesForUpload(
+  files: File[],
+  setUploadError: (message: string) => void
+): Promise<File[] | null> {
+  const preparedFiles: File[] = [];
+
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Un des fichiers n'est pas une image");
+      return null;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError("Un des fichiers est trop volumineux (max 50MB)");
+      return null;
+    }
+
+    try {
+      preparedFiles.push(await compressImageForUpload(file));
+    } catch {
+      setUploadError(`Impossible de compresser ${file.name} sous 10MB`);
+      return null;
+    }
+  }
+
+  return preparedFiles;
 }
 
 function toDateKey(input: Date): string {
@@ -262,6 +291,26 @@ export default function App() {
     );
   }
 
+  function resetCreateBookingForm() {
+    setTitle("");
+    setNote("");
+    setFiles(null);
+    setFilePreviews([]);
+    setRangeStart(null);
+    setRangeEnd(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  function clearEditSelectedFiles() {
+    setEditNewFiles(null);
+    setEditNewFilePreviews([]);
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = "";
+    }
+  }
+
   const selectedRange = useMemo(() => {
     if (!rangeStart) {
       return null;
@@ -311,6 +360,13 @@ export default function App() {
     setIsSubmitting(true);
     setError("");
 
+    const selectedFiles = files ? Array.from(files) : [];
+    const preparedFiles = await prepareFilesForUpload(selectedFiles, setError);
+    if (!preparedFiles) {
+      setIsSubmitting(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("startDate", toDateKey(rangeStart));
     formData.append("endDate", toDateKey(rangeEnd));
@@ -318,56 +374,46 @@ export default function App() {
     formData.append("title", title);
     formData.append("note", note);
 
-    if (files) {
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) {
-          setError("Un des fichiers n'est pas une image");
-          setIsSubmitting(false);
-          return;
-        }
+    let createdBooking: Booking | null = null;
 
-        if (file.size > 50 * 1024 * 1024) {
-          setError("Un des fichiers est trop volumineux (max 50MB)");
-          setIsSubmitting(false);
-          return;
-        }
+    try {
+      const response = await fetch(`${API_URL}/bookings/${reservationType}`, {
+        method: "POST",
+        body: formData
+      });
 
-        try {
-          const processedFile = await compressImageForUpload(file);
-          formData.append("photos", processedFile);
-        } catch {
-          setError(`Impossible de compresser ${file.name} sous 10MB`);
-          setIsSubmitting(false);
-          return;
-        }
+      if (!response.ok) {
+        const payload = (await response.json()) as { message?: string };
+        setError(payload.message ?? "Erreur lors de la réservation");
+        return;
       }
-    }
 
-    const response = await fetch(`${API_URL}/bookings/${reservationType}`, {
-      method: "POST",
-      body: formData
-    });
+      createdBooking = (await response.json()) as Booking;
 
-    if (!response.ok) {
-      const payload = (await response.json()) as { message?: string };
-      setError(payload.message ?? "Erreur lors de la réservation");
+      for (const file of preparedFiles) {
+        await uploadBookingPhoto(API_URL, createdBooking.id, file, currentUserId);
+      }
+
+      resetCreateBookingForm();
+      setShowBookingPopup(false);
+      await refreshData();
+    } catch (uploadError) {
+      if (createdBooking) {
+        resetCreateBookingForm();
+        setShowBookingPopup(false);
+        await refreshData();
+        setError(
+          uploadError instanceof ApiClientError
+            ? `Réservation créée, mais ${uploadError.message.toLowerCase()}`
+            : "Réservation créée, mais l'envoi des photos a échoué"
+        );
+        return;
+      }
+
+      setError(uploadError instanceof ApiClientError ? uploadError.message : "Erreur lors de la réservation");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    setTitle("");
-    setNote("");
-    setFiles(null);
-    setFilePreviews([]);
-    setRangeStart(null);
-    setRangeEnd(null);
-    setShowBookingPopup(false);
-    // Reset the file input element
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    await refreshData();
-    setIsSubmitting(false);
   }
 
   function confirmIdentity() {
@@ -547,6 +593,12 @@ export default function App() {
     setIsSavingEdit(true);
     setEditError("");
 
+    const preparedFiles = await prepareFilesForUpload(newPhotos, setEditError);
+    if (!preparedFiles) {
+      setIsSavingEdit(false);
+      return null;
+    }
+
     const formData = new FormData();
     formData.append("startDate", editStartDate);
     formData.append("endDate", editEndDate);
@@ -556,51 +608,50 @@ export default function App() {
     formData.append("removePhotoUrls", JSON.stringify(removePhotoUrls));
     formData.append("requesterUserId", currentUserId);
 
-    for (const file of newPhotos) {
-      if (!file.type.startsWith("image/")) {
-        setEditError("Un des fichiers n'est pas une image");
-        setIsSavingEdit(false);
+    let updatedBooking: Booking | null = null;
+
+    try {
+      const response = await fetch(`${API_URL}/bookings/${activeBooking.id}`, {
+        method: "PUT",
+        body: formData
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { message?: string };
+        setEditError(payload.message ?? failureMessage);
         return null;
       }
 
-      if (file.size > 50 * 1024 * 1024) {
-        setEditError("Un des fichiers est trop volumineux (max 50MB)");
-        setIsSavingEdit(false);
+      updatedBooking = (await response.json()) as Booking;
+
+      for (const file of preparedFiles) {
+        updatedBooking = await uploadBookingPhoto(API_URL, updatedBooking.id, file, currentUserId);
+      }
+
+      clearEditSelectedFiles();
+      await refreshData();
+      setActiveBooking(updatedBooking);
+      setEditPhotoUrls(updatedBooking.photoUrls);
+      return updatedBooking;
+    } catch (uploadError) {
+      if (updatedBooking) {
+        clearEditSelectedFiles();
+        await refreshData();
+        setActiveBooking(updatedBooking);
+        setEditPhotoUrls(updatedBooking.photoUrls);
+        setEditError(
+          uploadError instanceof ApiClientError
+            ? `Modifications enregistrées, mais ${uploadError.message.toLowerCase()}`
+            : "Modifications enregistrées, mais l'envoi des photos a échoué"
+        );
         return null;
       }
 
-      try {
-        const processedFile = await compressImageForUpload(file);
-        formData.append("photos", processedFile);
-      } catch {
-        setEditError(`Impossible de compresser ${file.name} sous 10MB`);
-        setIsSavingEdit(false);
-        return null;
-      }
-    }
-
-    const response = await fetch(`${API_URL}/bookings/${activeBooking.id}`, {
-      method: "PUT",
-      body: formData
-    });
-
-    if (!response.ok) {
-      const payload = (await response.json()) as { message?: string };
-      setEditError(payload.message ?? failureMessage);
-      setIsSavingEdit(false);
+      setEditError(uploadError instanceof ApiClientError ? uploadError.message : failureMessage);
       return null;
+    } finally {
+      setIsSavingEdit(false);
     }
-
-    const updatedBooking = (await response.json()) as Booking;
-    // Reset the edit file input element
-    if (editFileInputRef.current) {
-      editFileInputRef.current.value = "";
-    }
-    await refreshData();
-    setActiveBooking(updatedBooking);
-    setEditPhotoUrls(updatedBooking.photoUrls);
-    setIsSavingEdit(false);
-    return updatedBooking;
   }
 
   async function saveBookingEdits() {
@@ -612,21 +663,12 @@ export default function App() {
     const newPhotoFiles = editNewFiles ? Array.from(editNewFiles) : [];
     const result = await updateBooking(removePhotoUrls, newPhotoFiles);
     if (result) {
-      setEditNewFiles(null);
-      setEditNewFilePreviews([]);
-      if (editFileInputRef.current) {
-        editFileInputRef.current.value = "";
-      }
       setActiveBooking(null);
     }
   }
 
   function closeBookingEditor() {
-    setEditNewFiles(null);
-    setEditNewFilePreviews([]);
-    if (editFileInputRef.current) {
-      editFileInputRef.current.value = "";
-    }
+    clearEditSelectedFiles();
     setActiveBooking(null);
   }
 
